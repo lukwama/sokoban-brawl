@@ -3,6 +3,14 @@ Sokoban Brawl: A multiplayer competitive sokoban game. Play as a warehouse keepe
 
 **Sokoban Brawl** is a cross-platform multiplayer competitive game inspired by the classic "Sokoban" logic. Players take on the roles of professional warehouse keepers, engaging in a chaotic scramble for cargo within a shared map.
 
+### ✨ Game Modes & Core Features
+
+* **Single-Player Mode**: Practice routes, refine pushing strategy, and clear stages at your own pace.
+* **Multiplayer Mode**: Compete against other players in real-time and fight for the highest score before time runs out.
+* **Level Editor**: Build and customize your own stages to create new tactical layouts and challenge scenarios.
+* **Global Leaderboard**: Track top performances and compare results across players.
+* **Leaderboard Replay Support**: Review gameplay replays tied to leaderboard entries to analyze runs and learn advanced tactics.
+
 ### 🎮 Objective
 
 The goal is to push as many of your designated colored boxes into your specific target zones as possible within the time limit. Rankings are determined by the final count of successfully placed items.
