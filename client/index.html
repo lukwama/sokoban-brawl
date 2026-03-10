@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sokoban Brawl - 伺服器驗證介面</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <h1>Sokoban Brawl</h1>
+  <p class="subtitle">客戶端與伺服器連線驗證 · HTML5 + JavaScript</p>
+  <span id="connectionStatus" class="disconnected">未連線</span>
+
+  <section aria-labelledby="heading-settings">
+    <h2 id="heading-settings">伺服器設置</h2>
+    <div class="row">
+      <label for="serverUrl">伺服器網址</label>
+      <input type="text" id="serverUrl" placeholder="http://localhost:3000" value="http://localhost:3000">
+      <button type="button" id="btnHealth">檢查連線</button>
+    </div>
+    <div id="healthStatus" class="status" style="display:none"></div>
+  </section>
+
+  <section aria-labelledby="heading-leaderboard">
+    <h2 id="heading-leaderboard">排行榜讀取</h2>
+    <div class="row">
+      <label for="testLevelId">關卡 ID</label>
+      <input type="text" id="testLevelId" value="0" placeholder="0">
+      <button type="button" id="btnFetchLeaderboard" class="secondary">取得排行榜</button>
+    </div>
+    <div id="leaderboardStatus" class="status" style="display:none"></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>排名</th>
+            <th>姓名</th>
+            <th>步數</th>
+            <th>時間</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboardBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="heading-submit">
+    <h2 id="heading-submit">提交記錄測試</h2>
+    <p style="color:var(--text-dim);font-size:0.9rem;margin:0 0 12px">用於驗證 POST /api/leaderboard 與伺服器路徑驗證。關卡 0 範例：21 步，moves 見下方。</p>
+    <div class="row">
+      <label for="submitLevelId">關卡 ID</label>
+      <input type="text" id="submitLevelId" value="0">
+    </div>
+    <div class="row">
+      <label for="submitPlayerName">姓名</label>
+      <input type="text" id="submitPlayerName" value="測試玩家" placeholder="測試玩家">
+    </div>
+    <div class="row">
+      <label for="submitSteps">步數</label>
+      <input type="number" id="submitSteps" value="21" min="1">
+    </div>
+    <div class="row">
+      <label for="submitMoves">moves</label>
+      <input type="text" id="submitMoves" value="lruulldddurrrluurrddd" placeholder="u d l r 序列">
+    </div>
+    <div class="row">
+      <button type="button" id="btnSubmit">提交記錄</button>
+    </div>
+    <div id="submitStatus" class="status" style="display:none"></div>
+  </section>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

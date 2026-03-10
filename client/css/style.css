@@ -1,0 +1,199 @@
+/* Sokoban Brawl - 客戶端驗證介面 */
+:root {
+  --bg: #1a1b26;
+  --surface: #24283b;
+  --border: #414868;
+  --text: #c0caf5;
+  --text-dim: #565f89;
+  --accent: #7aa2f7;
+  --success: #9ece6a;
+  --error: #f7768e;
+  --radius: 8px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Segoe UI", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  margin: 0;
+  padding: 20px;
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+h1 {
+  font-size: 1.5rem;
+  margin: 0 0 8px;
+  color: var(--accent);
+}
+
+.subtitle {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  margin-bottom: 24px;
+}
+
+section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+  max-width: 640px;
+}
+
+section h2 {
+  font-size: 1rem;
+  margin: 0 0 12px;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.row:last-child {
+  margin-bottom: 0;
+}
+
+label {
+  min-width: 80px;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+}
+
+input[type="text"],
+input[type="number"] {
+  flex: 1;
+  min-width: 120px;
+  padding: 8px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+button {
+  padding: 8px 16px;
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+button:hover {
+  filter: brightness(1.1);
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+button.secondary {
+  background: var(--surface);
+  color: var(--accent);
+  border: 1px solid var(--border);
+}
+
+.status {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.status.success {
+  background: rgba(158, 206, 106, 0.15);
+  border-left: 4px solid var(--success);
+  color: var(--success);
+}
+
+.status.error {
+  background: rgba(247, 118, 142, 0.15);
+  border-left: 4px solid var(--error);
+  color: var(--error);
+}
+
+.status.pending {
+  background: rgba(122, 162, 247, 0.15);
+  border-left: 4px solid var(--accent);
+  color: var(--accent);
+}
+
+.table-wrap {
+  overflow-x: auto;
+  margin-top: 8px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+th, td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+th {
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+#connectionStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  margin-left: 8px;
+}
+
+#connectionStatus.connected {
+  background: rgba(158, 206, 106, 0.2);
+  color: var(--success);
+}
+
+#connectionStatus.disconnected {
+  background: rgba(247, 118, 142, 0.2);
+  color: var(--error);
+}
+
+#connectionStatus::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+#connectionStatus.connected::before {
+  box-shadow: 0 0 6px currentColor;
+}

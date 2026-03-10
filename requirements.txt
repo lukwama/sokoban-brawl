@@ -1,0 +1,6 @@
+# Sokoban Brawl - Python 依賴
+# 注意：sqlite3 為 Python 內建模組，無需安裝
+
+# 未來可能需要的套件（依實作需求啟用）
+# aiosqlite>=0.19.0   # 非同步 SQLite（若使用 asyncio）
+# python-dotenv>=1.0  # 環境變數

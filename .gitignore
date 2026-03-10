@@ -1,0 +1,29 @@
+# Environment
+.env
+.env.local
+*.local
+
+# IDE
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build outputs
+dist/
+build/
+*.o
+*.exe
+
+# Dependencies
+node_modules/
+venv/
+.venv/
+__pycache__/
+
+# Server data
+server/data/
+data/

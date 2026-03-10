@@ -1,0 +1,21 @@
+---
+description: Sokoban Brawl 遊戲專案開發規範
+alwaysApply: true
+---
+
+# Sokoban Brawl 專案規範
+
+## 專案概述
+- **類型**：多人競技倉庫番遊戲（倉庫大亂鬥）
+- **玩法**：扮演倉庫管理員，將指定顏色箱子推入目標區，計時競技
+- **架構**：權威伺服器（Node.js + Python）、客戶端（HTML5/JS 原型 → Godot）、SQLite 資料庫
+
+## 技術棧
+- **伺服器**：Python（核心邏輯）、Node.js（連線）、Socket.io
+- **客戶端**：HTML5 Canvas / JavaScript（初期）→ Godot GDScript（跨平台）
+- **資料庫**：SQLite（WAL 模式）
+
+## 開發原則
+- **權威伺服器**：所有推箱子邏輯與座標更新由伺服器判定，客戶端僅發送「操作意圖」
+- **傳輸協定**：JSON，含 `timestamp`、`action_id`、`checksum`；HMAC 簽章防篡改
+- **模組化**：便於從 HTML5 邏輯遷移至 Godot GDScript
