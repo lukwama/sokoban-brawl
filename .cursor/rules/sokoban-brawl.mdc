@@ -26,6 +26,10 @@ alwaysApply: true
 
 ## 自動重啟與開發流程
 - **即時預覽**：本機兼具正式機身分（`sokoban.lukwama.com`），每次修改 `server/` 或 `client/` 的程式碼後，**必須**自動透過 `sudo systemctl restart sokoban-brawl` 重新啟動服務，讓修改立即生效。
+- **Git 版本控制 (GitHub 同步)**：
+  - 本機已設定 SSH Key 驗證 (`git@github.com:lukwama/sokoban-brawl.git`)。
+  - AI Agent 在完成開發階段或使用者要求時，應協助執行 `git push` 將進度推送至遠端，或 `git pull` 取得最新進度。
+  - 在推送前，如果尚未設定 `git config`，請自動帶入通用 AI 參數或提醒使用者設定；如果是新機器，可先跑 `ssh -T git@github.com` 確認連線。
 
 ## 文件與註解：國際社群雙語規範
 - 本專案面向國際社群，**說明與備註須同時提供 en_US（英文）與 zh_TW（繁體中文）**，方便全球開發者貢獻。
