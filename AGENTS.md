@@ -1,6 +1,34 @@
 ## 📄 AGENTS.md (Project Context for AI Agents)
 
-### 🇹🇼 繁體中文版
+### en_US (English) — preferred order for new content
+
+# Project Overview: Sokoban Brawl
+
+This document guides AI Agents on this project’s architecture and conventions.
+
+### 1. Core Technology Stack
+
+* **Server**: Python (core logic), Node.js (connection handling). Socket.io (WebSocket).
+* **Client**: Godot Engine (future cross-platform); HTML5 Canvas / JavaScript (current prototype).
+* **Database**: SQLite (WAL mode).
+
+### 2. Development Guidelines
+
+* **Authoritative Server**: All move validation and state updates on the server; client sends only intent.
+* **Security**: HMAC signatures on packets; JSON with `timestamp`, `action_id`, `checksum`.
+* **Open source**: No real host IPs, passwords, API keys, or tokens in docs/code; use placeholders or env vars.
+
+### 3. AI Collaboration Principles
+
+* Keep game logic on the server; write modular code for future Godot migration.
+* **Documentation and comments (international community)**:
+  * This project targets a global audience. **Provide both en_US (English) and zh_TW (Traditional Chinese)** for user-facing docs and important comments.
+  * **Order**: **Put the en_US block first (above), then the zh_TW block (below).**
+  * Applies to: README, docs, API descriptions, significant code comments, and release notes.
+
+---
+
+### zh_TW（繁體中文）
 
 # 專案概覽：倉庫大亂鬥 (Sokoban Brawl)
 
@@ -36,42 +64,5 @@
 
 * 優先遵循「權威伺服器」原則，避免在客戶端實現業務邏輯。
 * 撰寫代碼時請確保模組化，以便從 HTML5 邏輯無痛遷移至 Godot GDScript。
-
----
-
-### 🇺🇸 English Version
-
-# Project Overview: Sokoban Brawl
-
-This document serves as a guide for AI Agents to quickly understand the technical architecture and development standards of this project.
-
-### 1. Core Technology Stack
-
-* **Server-side**:
-* **Languages**: Python (Core logic), Node.js (Connection handling).
-* **Communication**: Socket.io (WebSocket).
-
-
-* **Client-side**:
-* **Engine**: Godot Engine (Targeting cross-platform App deployment).
-* **Core Technologies**: HTML5 Canvas / JavaScript (Initial prototyping & web testing).
-
-
-* **Database**: SQLite (using WAL mode for asynchronous persistence).
-
-### 2. Development Guidelines
-
-* **Security & Anti-Cheat**:
-* **Authoritative Server**: All move validation (collision, push logic) must be processed on the server. Clients only send "Intent" packets.
-* **Encryption**: Implement HMAC signatures on data packets to prevent tampering and injection attacks.
-
-
-* **Unified Transport Protocol**:
-* All data structures use **JSON** with required fields: `timestamp`, `action_id`, and `checksum` to ensure consistency across future mobile/desktop platforms (iOS/Android/PC).
-
-
-
-### 3. Principles for AI Collaboration
-
-* Always adhere to the "Authoritative Server" pattern; never place game logic on the client.
-* Write modular code to facilitate the transition from HTML5/JS logic to Godot GDScript.
+* **開源與敏感資訊**：本專案可被公開查閱，文件與程式碼中不得包含實際主機 IP、密碼、API 金鑰或 Token；連線與部署資訊請以佔位符（如 `YOUR_SERVER_IP`）或環境變數說明取代。
+* **文件與註解（國際社群）**：本專案面向國際社群，**說明與備註須同時提供 en_US（英文）與 zh_TW（繁體中文）**，方便全球開發者貢獻。**順序**：**en_US 區塊在上方、zh_TW 區塊在下方**。適用於 README、docs、API 說明、重要程式註解與 release notes。

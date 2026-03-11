@@ -1,3 +1,62 @@
+# Single-player Sokoban game analysis
+
+### en_US (English)
+
+> **Source:** https://lukwama.com/sokoban/  
+> **Purpose:** Base for Sokoban Brawl single-player mode; migrate leaderboard and replay to server.
+
+#### 1. File structure
+
+Single HTML with embedded CSS (~150 lines, RWD/touch) and JavaScript (~2000+ lines, full game logic). Static assets: favicon.png, og_img.png.
+
+#### 2. Level format (text map)
+
+Characters: `#` wall, `?` invisible wall, `$` box, `.` target, `@` player, `*` box on target, space empty.
+
+#### 3. Core game logic
+
+State: currentLevelData, playerPos, boxPositions, targetPositions, stepCount, moveHistory, positionHistory. Key functions: loadLevel, movePlayer, undoLastMove, checkWinCondition, updateGameBoard, getDirectionName. Move rules: 4-direction move; push one box (no pull); no push into wall or two boxes.
+
+#### 4. Leaderboard (current: client localStorage)
+
+Structure: per-level array of { steps, moves, timestamp }. Rules: max 10 per level, sort by steps ascending, no duplicate moves. Functions: loadLeaderboards, saveLeaderboards, addToLeaderboard, updateLeaderboard.
+
+#### 5. Replay (client)
+
+Use moves array; replay at 300ms/step with movePlayer(direction, false). startPlayback(moves), stopPlayback().
+
+#### 6. Export/import (XML)
+
+gameData with leaderboards and customLevels; generateLeaderboardXML, parseLeaderboardXML.
+
+#### 7. Level editor
+
+Tools: wall, invisible wall, box, target, player, empty, box-on-target. Size 5–20. Validation: box count = target count, one player. Custom levels in localStorage.sokobanCustomLevels.
+
+#### 8. Built-in levels
+
+builtInLevels (59), customLevels, allLevels = builtIn + custom.
+
+#### 9. Touch support
+
+Button mode (U/D/L/R + undo) or gesture mode (swipe). Preference: localStorage.sokobanTouchMode.
+
+#### 10. Server migration targets
+
+Leaderboard: replace localStorage with GET/POST /api/leaderboard/:levelId. Replay: store moves on server; GET /api/replay/:recordId or include moves in leaderboard response. Custom levels (optional): server storage.
+
+#### 11. Modules to keep when migrating
+
+Level parse/render, movePlayer/checkWinCondition/undoLastMove, startPlayback/stopPlayback (consume server moves), level editor, touch, UI components.
+
+#### 12. Modules to replace
+
+loadLeaderboards → API; saveLeaderboards → API; addToLeaderboard → POST; export/import can remain as backup.
+
+---
+
+### zh_TW（繁體中文）
+
 # 單人倉庫番遊戲完整分析
 
 > 來源：https://lukwama.com/sokoban/  

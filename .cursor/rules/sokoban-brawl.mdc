@@ -1,21 +1,33 @@
 ---
-description: Sokoban Brawl 遊戲專案開發規範
+description: Sokoban Brawl 專案規範與現況（技術棧、進度、部署、安全）
 alwaysApply: true
 ---
 
 # Sokoban Brawl 專案規範
 
-## 專案概述
-- **類型**：多人競技倉庫番遊戲（倉庫大亂鬥）
-- **玩法**：扮演倉庫管理員，將指定顏色箱子推入目標區，計時競技
-- **架構**：權威伺服器（Node.js + Python）、客戶端（HTML5/JS 原型 → Godot）、SQLite 資料庫
+## 專案概述與現況
+- **類型**：多人競技倉庫番（倉庫大亂鬥）；目前以單人測試與排行榜為主，多人 Socket.io 已接線尚未實作玩法。
+- **架構**：權威伺服器（Node.js）、客戶端 HTML5/JS 原型 → 未來 Godot；排行榜與關卡驗證在伺服器。
 
-## 技術棧
-- **伺服器**：Python（核心邏輯）、Node.js（連線）、Socket.io
-- **客戶端**：HTML5 Canvas / JavaScript（初期）→ Godot GDScript（跨平台）
-- **資料庫**：SQLite（WAL 模式）
+## 技術棧（當前實作）
+- **伺服器**：Node.js 18+、ESM、Express、Socket.io、sql.js（SQLite 記憶體/檔案）、`server/core/validator.js` 推箱路徑驗證。
+- **客戶端**：`client/` 靜態 HTML/CSS/JS，預設連 `localhost:3000`，可改為正式站網址。
+- **API**：GET/POST `/api/leaderboard/:levelId`、GET `/health`；關卡定義在 `server/levels.json`。
+- **部署**：正式站 https://sokoban.lukwama.com，見 `docs/DEPLOYMENT.md`（Nginx + Let's Encrypt + systemd）。
 
 ## 開發原則
-- **權威伺服器**：所有推箱子邏輯與座標更新由伺服器判定，客戶端僅發送「操作意圖」
-- **傳輸協定**：JSON，含 `timestamp`、`action_id`、`checksum`；HMAC 簽章防篡改
-- **模組化**：便於從 HTML5 邏輯遷移至 Godot GDScript
+- **權威伺服器**：關卡過關驗證、排行榜寫入一律在伺服器；客戶端只發送操作意圖或已完成的 moves 序列。
+- **傳輸**：JSON；未來多人可補上 `timestamp`、`action_id`、`checksum`（HMAC）防篡改。
+- **模組化**：邏輯與介面分離，便於日後遷移至 Godot GDScript。
+
+## 開源與安全（必守）
+- 文件與程式碼**不得**包含：實際主機 IP、密碼、API 金鑰、Token。使用佔位符（如 `YOUR_SERVER_IP`）或環境變數說明。
+- 敏感設定使用 `process.env` 或 `.env`（已列入 .gitignore），勿提交至 Git。
+
+## 自動重啟與開發流程
+- **即時預覽**：本機兼具正式機身分（`sokoban.lukwama.com`），每次修改 `server/` 或 `client/` 的程式碼後，**必須**自動透過 `sudo systemctl restart sokoban-brawl` 重新啟動服務，讓修改立即生效。
+
+## 文件與註解：國際社群雙語規範
+- 本專案面向國際社群，**說明與備註須同時提供 en_US（英文）與 zh_TW（繁體中文）**，方便全球開發者貢獻。
+- **順序**：**en_US 區塊在上方、zh_TW 區塊在下方**。
+- 適用於：README、docs、API 說明、重要程式註解、Commit message 說明（可擇一語系簡短描述，但正式文件請雙語）。

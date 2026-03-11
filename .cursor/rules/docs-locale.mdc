@@ -1,0 +1,14 @@
+---
+description: Documentation and comments: en_US first, zh_TW second (international community)
+globs: "**/*.md"
+alwaysApply: false
+---
+
+# Bilingual documentation (en_US + zh_TW)
+
+This project targets a global community. When adding or editing **user-facing documentation** or **significant comments**:
+
+1. **Provide both locales**: an **en_US (English)** block and a **zh_TW (Traditional Chinese)** block.
+2. **Order**: Put the **en_US block first (above)**, then the **zh_TW block (below)**.
+
+Applies to: README, files under `docs/`, API descriptions, and important code comments. Short commit messages may use one language only.

@@ -1,3 +1,49 @@
+# Sokoban Brawl server API design
+
+### en_US (English)
+
+> Aligned with AGENTS.md and SINGLE_PLAYER_ANALYSIS.md migration plan.
+
+#### 1. Architecture overview
+
+Client (HTML5/Godot) ↔ Node.js server (Express + Socket.io) via HTTP/WebSocket, JSON + HMAC. Server uses core logic (move validation, levels) and SQLite (WAL) for leaderboard and replay.
+
+#### 2. Transport (AGENTS.md)
+
+All requests/responses use **JSON** with: `timestamp` (number, Unix ms), `action_id` (string, idempotency), `checksum` (string, HMAC).
+
+#### 3. REST API
+
+- **GET /health** → `{ "status": "ok", "service": "sokoban-brawl" }`
+- **GET /api/leaderboard/:levelId** — params: levelId; optional query: limit, scope (global|personal). Returns `{ levelId, records: [{ rank, steps, moves, timestamp, userId, recordId }] }`. `moves` is u/d/l/r string for replay.
+- **POST /api/leaderboard/:levelId** — body: steps, moves, userId (optional); server validates moves solve the level, steps match moves length, no duplicate moves. Returns `{ success, recordId, rank }` or error (`invalid_moves` etc.).
+- **GET /api/replay/:recordId** — returns replay data (recordId, levelId, steps, moves, timestamp). Optional if leaderboard already returns moves.
+- **GET /api/levels** — `{ builtIn, custom }`. **GET /api/levels/:levelId** — `{ levelId, data }` (level string). **POST /api/levels** — submit custom level (timestamp, action_id, checksum, data).
+
+#### 4. WebSocket (Socket.io) — multiplayer
+
+Events: `move_intent` (client→server, `{ direction: 'u'|'d'|'l'|'r' }`), `game_state` (server→client), `player_joined`, `player_left`.
+
+#### 5. DB schema (SQLite)
+
+**leaderboard_records:** id (TEXT PK), level_id, steps, moves, user_id, created_at (Unix ms). Index: (level_id, steps).
+
+#### 6. Implementation order
+
+Phase 1: REST leaderboard (GET/POST), SQLite. Phase 2: Replay. Phase 3: Levels API. Phase 4: WebSocket multiplayer, HMAC.
+
+#### 7. Local verification
+
+`npm install` → `npm run dev` → `curl http://localhost:3000/health`
+
+#### 8. One-line deploy (Linux)
+
+`curl -sSL https://raw.githubusercontent.com/lukwama/sokoban-brawl/main/scripts/run.sh | bash` or `./scripts/run.sh`
+
+---
+
+### zh_TW（繁體中文）
+
 # Sokoban Brawl 伺服器 API 設計
 
 > 依據 AGENTS.md 技術架構與 SINGLE_PLAYER_ANALYSIS.md 遷移需求規劃
@@ -253,22 +299,15 @@ POST /api/levels
 ## 七、本地驗證流程
 
 ```bash
-# 1. Node.js 依賴
 npm install
-
-# 2. 啟動伺服器
 npm run dev
-
-# 3. 測試
 curl http://localhost:3000/health
 ```
 
 ## 八、Linux 單行部署
 
 ```bash
-# 從 GitHub 一鍵啟動（需 git）
 curl -sSL https://raw.githubusercontent.com/lukwama/sokoban-brawl/main/scripts/run.sh | bash
-
-# 或已在專案目錄內
+# or
 ./scripts/run.sh
 ```

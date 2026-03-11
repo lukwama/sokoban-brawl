@@ -5,7 +5,7 @@
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import { readFileSync } from 'fs';
+import { readFileSync, statSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { initDb, getLeaderboard, hasDuplicateMoves, insertRecord } from './db.js';
@@ -24,8 +24,26 @@ app.use((req, res, next) => {
   next();
 });
 app.use(express.json());
-app.use('/client', express.static(clientDir));
-app.get('/', (req, res) => res.sendFile(join(clientDir, 'index.html')));
+app.use(express.static(clientDir)); // 掛載在根目錄，讓 /css 和 /js 可以直接被存取
+app.use('/client', express.static(clientDir)); // 為了相容保留
+
+function getMtime(path) {
+  try {
+    return statSync(join(clientDir, path)).mtimeMs;
+  } catch {
+    return Date.now();
+  }
+}
+
+app.get('/', (req, res) => {
+  let html = readFileSync(join(clientDir, 'index.html'), 'utf8');
+  const cssTs = getMtime('css/style.css');
+  const jsTs = getMtime('js/game.js');
+  html = html.replace(/href="css\/style\.css"(?:\?[^"]*)?/i, `href="css/style.css?t=${cssTs}"`);
+  html = html.replace(/src="js\/game\.js"(?:\?[^"]*)?/i, `src="js/game.js?t=${jsTs}"`);
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(html);
+});
 const httpServer = createServer(app);
 const io = new Server(httpServer, { cors: { origin: '*' } });
 
@@ -36,6 +54,10 @@ async function start() {
 
   app.get('/health', (req, res) => {
     res.json({ status: 'ok', service: 'sokoban-brawl' });
+  });
+
+  app.get('/api/levels', (req, res) => {
+    res.json({ levels });
   });
 
   app.get('/api/leaderboard/:levelId', (req, res) => {

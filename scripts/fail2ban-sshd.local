@@ -1,0 +1,21 @@
+# fail2ban 設定：SSH 防暴力破解
+# 安裝方式: sudo cp scripts/fail2ban-sshd.local /etc/fail2ban/jail.d/sshd.local
+# 然後: sudo systemctl restart fail2ban
+#
+# 請依需求調整 bantime、findtime、maxretry
+
+[sshd]
+enabled = true
+port    = ssh
+filter  = sshd
+logpath = %(sshd_log)s
+backend = %(sshd_backend)s
+
+# 封鎖時間：1 天（86400 秒），可改為 1h、1w 等
+bantime  = 1d
+# 偵測時間窗口：10 分鐘內
+findtime = 10m
+# 在此窗口內失敗次數達此值即封鎖
+maxretry = 5
+
+# 可選：若 SSH 改為非 22 port，請改 port = 你的port

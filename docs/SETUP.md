@@ -1,15 +1,57 @@
+# Sokoban Brawl local development setup
+
+### en_US (English)
+
+#### 1. Python virtual environment
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate   # Linux/macOS
+```
+
+**Note:** SQLite3 is in the Python standard library; no `pip install sqlite3` needed.
+
+**Verify:**
+```bash
+source .venv/bin/activate
+pip install -r requirements.txt
+python scripts/verify_env.py
+```
+
+#### 2. Node.js
+
+Use system Node.js (e.g. from Homebrew). No nvm required.
+
+**Install:** `npm install`  
+**Start server:** `npm run dev`
+
+**Verify:** `curl http://localhost:3000/health` → `{"status":"ok","service":"sokoban-brawl"}`
+
+**Client UI:** Open **http://localhost:3000/** for server URL, health check, leaderboard (GET/POST), and test submit.
+
+#### 3. Quick checklist
+
+| Item | Command |
+|------|--------|
+| Python venv | `source .venv/bin/activate && which python` |
+| SQLite | `python scripts/verify_env.py` |
+| Node deps | `npm install && npm ls` |
+| Server | `npm run dev` |
+
+---
+
+### zh_TW（繁體中文）
+
 # Sokoban Brawl 本地開發環境設定
 
 ## 一、Python 虛擬環境
 
 ### 建立與啟用
 ```bash
-# 使用 macOS 內建或 Homebrew Python
 /usr/local/bin/python3 -m venv .venv
 # 或
 python3 -m venv .venv
 
-# 啟用
 source .venv/bin/activate
 ```
 
@@ -19,8 +61,8 @@ source .venv/bin/activate
 ### 驗證
 ```bash
 source .venv/bin/activate
-pip install -r requirements.txt   # 目前為空依賴
-python scripts/verify_env.py      # 驗證 Python + SQLite
+pip install -r requirements.txt
+python scripts/verify_env.py
 ```
 
 ---

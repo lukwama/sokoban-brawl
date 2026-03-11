@@ -1,0 +1,11 @@
+---
+description: 伺服器與客戶端職責：權威邏輯僅在 server，client 只發意圖或結果
+globs: server/**/*.js, client/**/*.js, client/**/*.html
+alwaysApply: false
+---
+
+# 權威伺服器與客戶端職責
+
+- **server/**：關卡驗證、排行榜寫入、步數/路徑驗證須在伺服器（`validator.js`、`db.js`）；不信任客戶端傳入的步數，須以 moves 重新計算比對。
+- **client/**：僅負責 UI、發送請求（如 POST /api/leaderboard 的 playerName、steps、moves）；不實作「是否過關」的最終判定，不寫入排行榜邏輯。
+- 新增 API 或 Socket 事件時，伺服器必須驗證參數與權限，客戶端僅傳送意圖或已錄製的資料。
