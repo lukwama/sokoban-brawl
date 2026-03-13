@@ -7,15 +7,15 @@ const DIR = { u: { row: -1, col: 0 }, d: { row: 1, col: 0 }, l: { row: 0, col: -
 const ALIAS = { up: 'u', down: 'd', left: 'l', right: 'r' };
 
 function parseLevel(levelString) {
-  const rows = levelString.trim().split('\n').map((r) => r.split(''));
+  const rows = levelString.replace(/^[\r\n]+|[\r\n]+$/g, '').split('\n').map((r) => r.split(''));
   const rows_ = rows.length;
-  const cols_ = rows[0]?.length || 0;
+  const cols_ = Math.max(0, ...rows.map((r) => r.length));
   let playerPos = null;
   const boxPositions = [];
   const targetPositions = [];
 
   for (let row = 0; row < rows_; row++) {
-    for (let col = 0; col < cols_; col++) {
+    for (let col = 0; col < (rows[row]?.length || 0); col++) {
       const c = rows[row][col];
       if (c === '@' || c === '%') playerPos = { row, col };
       if (c === '$' || c === '*') boxPositions.push({ row, col });

@@ -134,7 +134,7 @@ function setBaseUrl(url) {
 }
 
 function parseLevel(levelString) {
-  const rows = levelString.trim().split('\n').map((r) => r.split(''));
+  const rows = levelString.replace(/^[\r\n]+|[\r\n]+$/g, '').split('\n').map((r) => r.split(''));
   const R = rows.length;
   const C = Math.max(0, ...rows.map((r) => r.length));
   let player = null;
@@ -185,7 +185,11 @@ function getAllLevels() {
   const customLevelStrings = customLevels.map(level => 
     typeof level === 'string' ? level : level.levelData
   );
-  return [...levels, ...customLevelStrings];
+  const allLevels = [...levels, ...customLevelStrings];
+  if (validationTestLevel !== null) {
+    allLevels.push(validationTestLevel);
+  }
+  return allLevels;
 }
 
 let levelIndex = 0;
@@ -200,6 +204,9 @@ let controlMode = 'buttons';
 let swipeStart = null;
 let isLevelTransitioning = false;
 let pendingCustomLevelUpload = null;
+// en_US: Temporary level string used for editor validation play-through (not persisted in customLevels)
+// zh_TW: 編輯器驗證通關時暫存的關卡字串（不會影響 customLevels）
+let validationTestLevel = null;
 
 const boardEl = document.getElementById('gameBoard');
 const stepsEl = document.getElementById('gameSteps');
@@ -431,6 +438,19 @@ function renderBoard() {
 
 function loadLevel(idx) {
   stopPlayback();
+
+  // en_US: If in validation mode and navigating to a different level, cancel validation
+  // zh_TW: 若正在驗證模式且導航到其他關卡，取消驗證並恢復所有自訂關卡
+  if (pendingCustomLevelUpload) {
+    const validationIdx = levels.length + customLevels.length;
+    if (idx !== validationIdx) {
+      pendingCustomLevelUpload = null;
+      validationTestLevel = null;
+      isLevelTransitioning = false;
+      loadCustomLevelsFromServer();
+    }
+  }
+
   const all = getAllLevels();
   if (idx < 0 || idx >= all.length) return;
   levelIndex = idx;
@@ -560,6 +580,7 @@ function updateGameplayControlState() {
 
 function canAcceptPlayerInput() {
   if (isPlaybackActive) return false;
+  if (isLevelTransitioning) return false;
   const panel = document.querySelector('.tab-panel.active');
   if (!panel || panel.id !== 'panelGame') return false;
   if (winOverlay && winOverlay.classList.contains('visible')) return false;
@@ -680,9 +701,11 @@ async function handleCustomLevelCompletion() {
       await showError('玩家名稱未設定', '請先在設定中設定您的玩家名稱（不可使用預設名稱 Player）\nPlease set your player name in settings.');
       showTab('settings');
       pendingCustomLevelUpload = null;
+      validationTestLevel = null;
       await loadCustomLevelsFromServer();
       isLevelTransitioning = false;
       boardEl.classList.remove('win-glow');
+      loadLevel(0);
       return;
     }
     
@@ -707,6 +730,8 @@ async function handleCustomLevelCompletion() {
       pendingCustomLevelUpload = null;
       await loadCustomLevelsFromServer();
     }
+    
+    validationTestLevel = null;
     
     const area = document.querySelector('.game-area');
     if (area) area.classList.add('fade-out');
@@ -963,10 +988,10 @@ async function editorSave() {
     timestamp: Date.now()
   };
 
-  // en_US: Load level for testing
-  // zh_TW: 載入關卡進行測試
-  customLevels = [str];
-  levelIndex = levels.length;
+  // en_US: Set as temporary validation level (preserves existing customLevels)
+  // zh_TW: 設為暫時驗證關卡（保留現有自訂關卡不被覆蓋）
+  validationTestLevel = str;
+  levelIndex = levels.length + customLevels.length;
   loadLevel(levelIndex);
   showTab('game');
 
