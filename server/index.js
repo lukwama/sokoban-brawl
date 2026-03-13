@@ -240,9 +240,26 @@ async function start() {
   app.get('/api/leaderboard/:levelId', (req, res) => {
     const { levelId } = req.params;
     const levelIndex = parseInt(levelId, 10);
-    if (isNaN(levelIndex) || levelIndex < 0 || levelIndex >= levels.length) {
+    
+    if (isNaN(levelIndex) || levelIndex < 0) {
       return res.status(400).json({ error: 'invalid_level_id' });
     }
+    
+    // en_US: Check if level exists (built-in or custom)
+    // zh_TW: 檢查關卡是否存在（內建或自訂）
+    let levelExists = false;
+    
+    if (levelIndex < levels.length) {
+      levelExists = true;
+    } else if (levelIndex >= 57) {
+      const customLevel = getCustomLevelById(levelIndex);
+      levelExists = customLevel !== null;
+    }
+    
+    if (!levelExists) {
+      return res.status(400).json({ error: 'invalid_level_id' });
+    }
+    
     const records = getLeaderboard(levelId);
     res.json({ levelId, records });
   });
