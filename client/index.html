@@ -31,10 +31,7 @@
       <header class="game-header">
         <div class="level-nav">
           <button type="button" id="btnPrevLevel" class="icon-btn" aria-label="Previous">◀</button>
-          <span class="level-title-wrap">
-            <span id="levelNum" class="level-num" aria-live="polite">1</span>
-            <span id="levelBadge" class="level-badge" hidden>玩家自訂</span>
-          </span>
+          <span id="levelNum" class="level-num" aria-live="polite">1</span>
           <button type="button" id="btnNextLevel" class="icon-btn" aria-label="Next">▶</button>
         </div>
         <div class="steps-display">
@@ -48,6 +45,7 @@
       </header>
       <div class="game-area">
         <div id="gameBoard" class="game-board" role="grid" aria-label="Board"></div>
+        <div id="levelBadge" class="level-badge-row" hidden></div>
         <div class="controls">
           <div class="dpad">
             <button type="button" id="btnUp" class="icon-btn dpad-btn">↑</button>
@@ -120,7 +118,10 @@
       <header class="lb-header">
         <div class="level-nav">
           <button type="button" id="lbPrevLevel" class="icon-btn" aria-label="Prev level">◀</button>
-          <span id="lbLevelNum" class="level-num">1</span>
+          <span class="level-title-wrap">
+            <span id="lbLevelNum" class="level-num">1</span>
+            <span id="lbLevelBadge" class="level-badge" hidden></span>
+          </span>
           <button type="button" id="lbNextLevel" class="icon-btn" aria-label="Next level">▶</button>
         </div>
         <button type="button" id="lbRefresh" class="icon-btn" aria-label="Refresh">↻</button>

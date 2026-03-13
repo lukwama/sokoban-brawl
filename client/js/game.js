@@ -406,29 +406,17 @@ function renderBoard() {
   if (levelNumEl) levelNumEl.textContent = levelIndex + 1;
   const badgeEl = document.getElementById('levelBadge');
   if (badgeEl) {
-    // en_US: Only levels beyond built-in 56 levels (index >= 56) are custom
-    // zh_TW: 只有超過內建 56 關（index >= 56）的才是玩家自訂關卡
     const isCustom = levelIndex >= levels.length;
+    const customIndex = levelIndex - levels.length;
+    const customLevel = isCustom ? customLevels[customIndex] : null;
     badgeEl.hidden = !isCustom;
-    
-    if (isCustom && customLevels.length > 0) {
-      const customIndex = levelIndex - levels.length;
-      const customLevel = customLevels[customIndex];
-      
+    if (isCustom) {
       if (customLevel && customLevel.creatorName) {
-        const timestamp = new Date(customLevel.createdAt);
-        const dateStr = timestamp.toLocaleString('zh-TW', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-          hour12: false
-        });
-        badgeEl.textContent = `by ${customLevel.creatorName} ${dateStr}`;
+        const ts = new Date(customLevel.createdAt);
+        const dateStr = ts.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' });
+        badgeEl.textContent = `by ${customLevel.creatorName}  ${dateStr}`;
       } else {
-        badgeEl.textContent = '玩家自訂';
+        badgeEl.textContent = pendingCustomLevelUpload ? '測試中' : '玩家自訂';
       }
     }
   }
@@ -473,11 +461,39 @@ function loadLevel(idx) {
   updateGameplayControlState();
 }
 
+// en_US: Get the API level ID for a given game-level index (built-in: index=id; custom: from customLevels)
+// zh_TW: 依遊戲關卡索引取得 API 用的 levelId（內建：index=id；自訂：由 customLevels 取得）
+function getLevelId(gameIndex) {
+  if (gameIndex < levels.length) return gameIndex;
+  const ci = gameIndex - levels.length;
+  if (ci >= 0 && ci < customLevels.length) {
+    const cl = customLevels[ci];
+    return cl && cl.levelId != null ? cl.levelId : null;
+  }
+  return null;
+}
+
 function syncLbLevel() {
-  lbLevelIndex = levelIndex < levels.length ? levelIndex : 0;
+  const totalLb = levels.length + customLevels.length;
+  lbLevelIndex = (levelIndex >= 0 && levelIndex < totalLb) ? levelIndex : 0;
+  updateLbDisplay();
+}
+
+function updateLbDisplay() {
+  const totalLb = levels.length + customLevels.length;
   if (lbLevelNum) lbLevelNum.textContent = lbLevelIndex + 1;
   if (lbPrevLevel) lbPrevLevel.disabled = lbLevelIndex <= 0;
-  if (lbNextLevel) lbNextLevel.disabled = lbLevelIndex >= levels.length - 1;
+  if (lbNextLevel) lbNextLevel.disabled = lbLevelIndex >= totalLb - 1;
+  const lbBadge = document.getElementById('lbLevelBadge');
+  if (lbBadge) {
+    const isCustom = lbLevelIndex >= levels.length;
+    lbBadge.hidden = !isCustom;
+    if (isCustom) {
+      const ci = lbLevelIndex - levels.length;
+      const cl = customLevels[ci];
+      lbBadge.textContent = (cl && cl.creatorName) ? `by ${cl.creatorName}` : '玩家自訂';
+    }
+  }
 }
 
 function doMove(key, recordMove = true) {
@@ -784,7 +800,9 @@ async function submitScore() {
   const name = (document.getElementById('playerName') && document.getElementById('playerName').value.trim()) || 'Player';
   const moves = getMovesString();
   if (!moves) return;
-  const submitLevelId = levelIndex < levels.length ? String(levelIndex) : '0';
+  const lid = getLevelId(levelIndex);
+  if (lid === null) return;
+  const submitLevelId = String(lid);
   setConnectionStatus(false);
   try {
     const res = await fetch(`${base}/api/leaderboard/${submitLevelId}`, {
@@ -807,7 +825,9 @@ async function submitScore() {
 
 async function refreshLeaderboard() {
   if (!leaderboardBody) return;
-  const levelId = String(lbLevelIndex);
+  const lid = getLevelId(lbLevelIndex);
+  if (lid === null) { leaderboardBody.innerHTML = ''; return; }
+  const levelId = String(lid);
   leaderboardBody.innerHTML = '';
   try {
     const base = getBaseUrl();
@@ -1069,8 +1089,13 @@ function initGame() {
     btn.addEventListener('click', () => showTab(btn.dataset.tab));
   });
 
-  if (lbPrevLevel) lbPrevLevel.addEventListener('click', () => { if (lbLevelIndex > 0) { lbLevelIndex--; lbLevelNum.textContent = lbLevelIndex + 1; lbPrevLevel.disabled = lbLevelIndex <= 0; lbNextLevel.disabled = false; refreshLeaderboard(); } });
-  if (lbNextLevel) lbNextLevel.addEventListener('click', () => { if (lbLevelIndex < levels.length - 1) { lbLevelIndex++; lbLevelNum.textContent = lbLevelIndex + 1; lbNextLevel.disabled = lbLevelIndex >= levels.length - 1; lbPrevLevel.disabled = false; refreshLeaderboard(); } });
+  if (lbPrevLevel) lbPrevLevel.addEventListener('click', () => {
+    if (lbLevelIndex > 0) { lbLevelIndex--; updateLbDisplay(); refreshLeaderboard(); }
+  });
+  if (lbNextLevel) lbNextLevel.addEventListener('click', () => {
+    const totalLb = levels.length + customLevels.length;
+    if (lbLevelIndex < totalLb - 1) { lbLevelIndex++; updateLbDisplay(); refreshLeaderboard(); }
+  });
   if (lbRefresh) lbRefresh.addEventListener('click', refreshLeaderboard);
   bindControlModeButtons();
   bindSwipeControls();
