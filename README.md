@@ -29,6 +29,8 @@ Push as many of your designated colored boxes into your target zones as possible
 #### 🛠 Technical Architecture
 
 * **Authoritative Server**: Node.js server validates move legality and resolves action order.
+* **Anti-Cheat System**: Server-side validation prevents fraudulent leaderboard submissions (100% success rate).
+* **Custom Level Upload**: Players can upload custom levels with validation (requires completion, prevents duplicates).
 * **Open Source & Self-Hosting**: Full server code for private hosting.
 
 #### 🚀 Quick Start
@@ -65,6 +67,16 @@ Set up GitHub webhook for automatic deployment:
 - **[Remote Agent Prompt](docs/REMOTE-AGENT-DEPLOY-PROMPT.md)** - For Cursor AI Agent
 - **[Path Detection](docs/PATH-DETECTION-EXPLAINED.md)** - How auto-detection works
 
+#### 🧪 Testing & Validation
+
+The server includes comprehensive anti-cheat and custom level validation:
+- **[Test Scripts Guide](TEST_SCRIPTS_README.md)** - How to run tests
+- **[Validation Report](docs/VALIDATION_COMPLETE.md)** - Test results (100% success)
+- **[Anti-Cheat Report](docs/ANTI_CHEAT_TEST_REPORT.md)** - Detailed anti-cheat analysis
+- **[Custom Level Report](docs/CUSTOM_LEVEL_TEST_REPORT.md)** - Custom level system details
+
+**Quick test**: `node comprehensive_validation_test.js`
+
 ---
 
 ### zh_TW（繁體中文）
@@ -96,6 +108,8 @@ Set up GitHub webhook for automatic deployment:
 #### 🛠 技術架構
 
 * **權威伺服器**：Node.js 伺服器驗證操作合法性與先後順序。
+* **防作弊系統**：伺服器端驗證防止虛假排行榜提交（100% 成功率）。
+* **自訂關卡上傳**：玩家可上傳自訂關卡並進行驗證（需先通關、防止重複）。
 * **開源與自架**：伺服器程式碼完整開放，可私人架設。
 
 #### 🚀 快速開始
@@ -131,3 +145,13 @@ curl -X POST http://localhost:3000/api/leaderboard/0 -H "Content-Type: applicati
 - **[完整指南](docs/AUTO-DEPLOY.md)** - 詳細配置與故障排除
 - **[遠端 Agent 指令](docs/REMOTE-AGENT-DEPLOY-PROMPT.md)** - 給 Cursor AI Agent 使用
 - **[路徑偵測說明](docs/PATH-DETECTION-EXPLAINED.md)** - 自動偵測運作原理
+
+#### 🧪 測試與驗證
+
+伺服器包含全面的防作弊和自訂關卡驗證：
+- **[測試腳本指南](TEST_SCRIPTS_README.md)** - 如何執行測試
+- **[驗證報告](docs/VALIDATION_COMPLETE.md)** - 測試結果（100% 成功）
+- **[防作弊報告](docs/ANTI_CHEAT_TEST_REPORT.md)** - 詳細防作弊分析
+- **[自訂關卡報告](docs/CUSTOM_LEVEL_TEST_REPORT.md)** - 自訂關卡系統細節
+
+**快速測試**：`node comprehensive_validation_test.js`
