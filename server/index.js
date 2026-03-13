@@ -89,8 +89,8 @@ function sendIndexHtml(req, res) {
   let html = readFileSync(join(clientDir, 'index.html'), 'utf8');
   const cssTs = getMtime('css/style.css');
   const jsTs = getMtime('js/game.js');
-  html = html.replace(/href="css\/style\.css"(?:\?[^"]*)?/i, `href="css/style.css?t=${cssTs}"`);
-  html = html.replace(/src="js\/game\.js"(?:\?[^"]*)?/i, `src="js/game.js?t=${jsTs}"`);
+  html = html.replace(/href="\/css\/style\.css(?:\?[^"]*)?"/i, `href="/css/style.css?t=${cssTs}"`);
+  html = html.replace(/src="\/js\/game\.js(?:\?[^"]*)?"/i, `src="/js/game.js?t=${jsTs}"`);
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.send(html);
 }
