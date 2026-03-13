@@ -15,10 +15,13 @@ Copy and paste this prompt to your Cursor AI Agent connected to `sokoban.lukwama
 ```
 Please set up GitHub webhook auto-deployment for this Sokoban Brawl server following these steps:
 
-1. **Pull latest code**:
-   - Navigate to /opt/sokoban-brawl
+IMPORTANT: Use the current working directory as the project root. Do not hardcode /opt/sokoban-brawl.
+
+1. **Verify and pull latest code**:
+   - Check current directory with: pwd
+   - Verify this is a git repository: git status
    - Execute: git pull origin main
-   - Verify the latest auto-deploy files are present
+   - Verify the latest auto-deploy files are present (docs/AUTO-DEPLOY-QUICKSTART.md should exist)
 
 2. **Review documentation**:
    - Read docs/AUTO-DEPLOY-QUICKSTART.md for quick setup steps
@@ -26,11 +29,12 @@ Please set up GitHub webhook auto-deployment for this Sokoban Brawl server follo
 
 3. **Configure auto-deployment** by following the quick start guide:
    - Generate webhook secret using: openssl rand -hex 32
-   - Create /opt/sokoban-brawl/.env with:
+   - Create .env file in the project root directory with:
      * WEBHOOK_SECRET=(generated secret)
      * DEPLOY_BRANCH=main
      * PORT=3000
      * NODE_ENV=production
+   - Note: The deployment script will auto-detect the project directory
    
 4. **Set up permissions**:
    - Make scripts/deploy.sh executable
@@ -39,7 +43,10 @@ Please set up GitHub webhook auto-deployment for this Sokoban Brawl server follo
    - Configure git safe.directory for www-data user
 
 5. **Update systemd service**:
-   - Add EnvironmentFile=/opt/sokoban-brawl/.env to service configuration
+   - Detect the systemd service name (likely sokoban-brawl.service)
+   - Get the service file path: systemctl status sokoban-brawl | grep Loaded
+   - Add EnvironmentFile=<PROJECT_DIR>/.env to service configuration (use actual project path)
+   - Ensure WorkingDirectory points to the project root
    - Reload systemd daemon and restart service
 
 6. **Verify setup**:
@@ -104,10 +111,13 @@ sudo tail -n 50 /var/log/sokoban-brawl-deploy.log
 ```
 請為這台 Sokoban Brawl 伺服器設置 GitHub webhook 自動部署，按照以下步驟進行：
 
-1. **拉取最新程式碼**：
-   - 導航到 /opt/sokoban-brawl
+重要：使用當前工作目錄作為專案根目錄，不要硬編碼 /opt/sokoban-brawl 路徑。
+
+1. **驗證並拉取最新程式碼**：
+   - 使用 pwd 檢查當前目錄
+   - 驗證這是 git 儲存庫：git status
    - 執行：git pull origin main
-   - 確認最新的自動部署檔案已存在
+   - 確認最新的自動部署檔案已存在（應有 docs/AUTO-DEPLOY-QUICKSTART.md）
 
 2. **查閱文檔**：
    - 閱讀 docs/AUTO-DEPLOY-QUICKSTART.md 快速設置步驟
@@ -115,11 +125,12 @@ sudo tail -n 50 /var/log/sokoban-brawl-deploy.log
 
 3. **配置自動部署**（依照快速入門指南）：
    - 使用此指令產生 webhook 密鑰：openssl rand -hex 32
-   - 建立 /opt/sokoban-brawl/.env，內容包含：
+   - 在專案根目錄建立 .env 檔案，內容包含：
      * WEBHOOK_SECRET=（剛產生的密鑰）
      * DEPLOY_BRANCH=main
      * PORT=3000
      * NODE_ENV=production
+   - 注意：部署腳本會自動偵測專案目錄
    
 4. **設置權限**：
    - 設定 scripts/deploy.sh 為可執行
@@ -128,7 +139,10 @@ sudo tail -n 50 /var/log/sokoban-brawl-deploy.log
    - 為 www-data 使用者配置 git safe.directory
 
 5. **更新 systemd 服務**：
-   - 在服務配置中加入 EnvironmentFile=/opt/sokoban-brawl/.env
+   - 偵測 systemd 服務名稱（通常是 sokoban-brawl.service）
+   - 取得服務檔案路徑：systemctl status sokoban-brawl | grep Loaded
+   - 在服務配置中加入 EnvironmentFile=<專案目錄>/.env（使用實際專案路徑）
+   - 確保 WorkingDirectory 指向專案根目錄
    - 重新載入 systemd daemon 並重啟服務
 
 6. **驗證設置**：

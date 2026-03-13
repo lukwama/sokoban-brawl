@@ -13,10 +13,13 @@
 
 set -e
 
-# Log file (adjust path as needed)
-LOG_FILE="/var/log/sokoban-brawl-deploy.log"
-REPO_DIR="/opt/sokoban-brawl"
+# Detect repository directory (use REPO_DIR env var, or script's parent directory)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_DIR="${REPO_DIR:-$(dirname "$SCRIPT_DIR")}"
 BRANCH="${DEPLOY_BRANCH:-main}"
+
+# Log file (use LOG_FILE env var, or default location)
+LOG_FILE="${LOG_FILE:-/var/log/sokoban-brawl-deploy.log}"
 
 # Logging function
 log() {

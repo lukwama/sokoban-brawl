@@ -23,12 +23,14 @@ The auto-deployment system consists of:
 
 ### 1. Configure Server Environment Variables
 
-On your production server, create or edit `/opt/sokoban-brawl/.env`:
+On your production server, create or edit `.env` in your project directory:
 
 ```bash
-cd /opt/sokoban-brawl
+cd /path/to/your/sokoban-brawl  # Adjust to your actual project location
 nano .env
 ```
+
+**Note**: The deployment script auto-detects the project directory. See [PATH-DETECTION-EXPLAINED.md](PATH-DETECTION-EXPLAINED.md) for details.
 
 Add these variables (or use systemd environment file):
 
@@ -38,6 +40,10 @@ WEBHOOK_SECRET=your_secure_random_string_here
 DEPLOY_BRANCH=main
 PORT=3000
 NODE_ENV=production
+
+# Optional: Override auto-detected paths
+# REPO_DIR=/opt/sokoban-brawl
+# LOG_FILE=/var/log/sokoban-brawl-deploy.log
 ```
 
 **Important**: Keep `WEBHOOK_SECRET` secure and never commit it to Git.
@@ -47,7 +53,7 @@ NODE_ENV=production
 The deployment script needs to run `git`, `npm`, and `systemctl` commands:
 
 ```bash
-cd /opt/sokoban-brawl
+cd /path/to/your/sokoban-brawl  # Your project directory
 chmod +x scripts/deploy.sh
 ```
 

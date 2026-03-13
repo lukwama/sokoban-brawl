@@ -9,8 +9,8 @@ Quick setup guide for automatic deployment from GitHub to production server.
 ### 1. On Your Production Server (`sokoban.lukwama.com`)
 
 ```bash
-# Navigate to project directory
-cd /opt/sokoban-brawl
+# Navigate to your project directory (adjust path as needed)
+cd /path/to/your/sokoban-brawl
 
 # Pull latest code
 git pull origin main
@@ -21,6 +21,8 @@ openssl rand -hex 32
 # Create .env file with the secret
 nano .env
 ```
+
+**Note**: The deployment script auto-detects the project directory. You can override it by setting `REPO_DIR` in `.env` if needed.
 
 Add to `.env`:
 ```bash
@@ -118,8 +120,8 @@ See [AUTO-DEPLOY.md](AUTO-DEPLOY.md) for:
 ### 1. 在你的正式環境伺服器上（`sokoban.lukwama.com`）
 
 ```bash
-# 導航到專案目錄
-cd /opt/sokoban-brawl
+# 導航到你的專案目錄（依實際路徑調整）
+cd /path/to/your/sokoban-brawl
 
 # 拉取最新程式碼
 git pull origin main
@@ -130,6 +132,8 @@ openssl rand -hex 32
 # 建立 .env 檔案並加入密鑰
 nano .env
 ```
+
+**注意**：部署腳本會自動偵測專案目錄。如需要，可以在 `.env` 中設定 `REPO_DIR` 覆寫。
 
 加入到 `.env`：
 ```bash
