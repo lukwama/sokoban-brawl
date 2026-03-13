@@ -6,6 +6,7 @@ import initSqlJs from 'sql.js';
 import { mkdirSync, existsSync, readFileSync, writeFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
+import { createHash } from 'crypto';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const dbPath = process.env.SQLITE_PATH || join(__dirname, '..', 'data', 'sokoban.db');
@@ -37,6 +38,22 @@ export async function initDb() {
   `);
   db.run(`CREATE INDEX IF NOT EXISTS idx_leaderboard_level ON leaderboard(level_id)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_leaderboard_rank ON leaderboard(level_id, steps, created_at)`);
+
+  // en_US: Custom levels table (player-uploaded levels)
+  // zh_TW: 自訂關卡表（玩家上傳的關卡）
+  db.run(`
+    CREATE TABLE IF NOT EXISTS custom_levels (
+      level_id INTEGER PRIMARY KEY,
+      level_data TEXT NOT NULL,
+      level_hash TEXT NOT NULL,
+      creator_name TEXT NOT NULL,
+      solution_moves TEXT NOT NULL,
+      solution_steps INTEGER NOT NULL,
+      created_at INTEGER NOT NULL
+    )
+  `);
+  db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_custom_level_hash ON custom_levels(level_hash)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_custom_level_created ON custom_levels(created_at)`);
 
   return db;
 }
@@ -101,4 +118,92 @@ export function insertRecord(levelId, playerName, steps, moves, customCreatedAt 
   const all = getLeaderboard(levelId);
   const rank = all.findIndex((r) => r.recordId === id) + 1;
   return { recordId: id, rank };
+}
+
+// en_US: Custom levels functions
+// zh_TW: 自訂關卡函數
+
+/** Generate hash for level data to detect duplicates */
+function hashLevelData(levelData) {
+  return createHash('sha256').update(levelData.trim()).digest('hex');
+}
+
+/** Get next available custom level ID (starts from 57) */
+export function getNextCustomLevelId() {
+  const d = getDb();
+  const res = d.exec('SELECT MAX(level_id) as max_id FROM custom_levels');
+  const maxId = res[0]?.values?.[0]?.[0] || 56;
+  return Math.max(57, maxId + 1);
+}
+
+/** Check if level data already exists (duplicate check) */
+export function isDuplicateLevel(levelData) {
+  const d = getDb();
+  const hash = hashLevelData(levelData);
+  const res = d.exec(`SELECT level_id FROM custom_levels WHERE level_hash = '${escape(hash)}' LIMIT 1`);
+  const exists = (res[0]?.values?.length || 0) > 0;
+  if (exists) {
+    const levelId = res[0].values[0][0];
+    return { isDuplicate: true, existingLevelId: levelId };
+  }
+  return { isDuplicate: false };
+}
+
+/** Insert custom level */
+export function insertCustomLevel(levelData, creatorName, solutionMoves, solutionSteps) {
+  const d = getDb();
+  const levelId = getNextCustomLevelId();
+  const hash = hashLevelData(levelData);
+  const createdAt = Date.now();
+  
+  d.run(
+    `INSERT INTO custom_levels (level_id, level_data, level_hash, creator_name, solution_moves, solution_steps, created_at)
+     VALUES (${levelId}, '${escape(levelData)}', '${escape(hash)}', '${escape(creatorName)}', '${escape(solutionMoves)}', ${solutionSteps}, ${createdAt})`
+  );
+  saveDb();
+  
+  return { levelId, createdAt };
+}
+
+/** Get all custom levels */
+export function getCustomLevels() {
+  const d = getDb();
+  const res = d.exec(
+    `SELECT level_id, level_data, creator_name, solution_steps, created_at
+     FROM custom_levels ORDER BY level_id ASC`
+  );
+  const rows = res[0]?.values || [];
+  const cols = res[0]?.columns || [];
+  const idx = (k) => cols.indexOf(k);
+  
+  return rows.map((v) => ({
+    levelId: v[idx('level_id')],
+    levelData: v[idx('level_data')],
+    creatorName: v[idx('creator_name')],
+    solutionSteps: v[idx('solution_steps')],
+    createdAt: v[idx('created_at')],
+  }));
+}
+
+/** Get custom level by ID */
+export function getCustomLevelById(levelId) {
+  const d = getDb();
+  const res = d.exec(
+    `SELECT level_id, level_data, creator_name, solution_steps, created_at
+     FROM custom_levels WHERE level_id = ${parseInt(levelId, 10)} LIMIT 1`
+  );
+  const rows = res[0]?.values || [];
+  if (rows.length === 0) return null;
+  
+  const cols = res[0].columns;
+  const idx = (k) => cols.indexOf(k);
+  const v = rows[0];
+  
+  return {
+    levelId: v[idx('level_id')],
+    levelData: v[idx('level_data')],
+    creatorName: v[idx('creator_name')],
+    solutionSteps: v[idx('solution_steps')],
+    createdAt: v[idx('created_at')],
+  };
 }
