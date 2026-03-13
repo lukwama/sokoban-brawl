@@ -82,6 +82,19 @@ let isPlaybackActive = false;
 let lbLevelIndex = 0;
 let controlMode = 'buttons';
 let swipeStart = null;
+const DEBUG_LOG_ENDPOINT = '/api/debug/client';
+
+function emitDebugLog(hypothesisId, location, message, data = {}) {
+  const payload = { hypothesisId, location, message, data, timestamp: Date.now() };
+  try {
+    fetch(DEBUG_LOG_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      keepalive: true,
+    }).catch(() => {});
+  } catch (_) {}
+}
 
 const boardEl = document.getElementById('gameBoard');
 const stepsEl = document.getElementById('gameSteps');
@@ -212,8 +225,8 @@ function updateGameControlAvailability() {
 function handleSwipeMove(dx, dy) {
   if (isPlayerInputLocked()) return;
   if (Math.abs(dx) < 24 && Math.abs(dy) < 24) return;
-  if (Math.abs(dx) > Math.abs(dy)) doMove(dx > 0 ? 'r' : 'l');
-  else doMove(dy > 0 ? 'd' : 'u');
+  if (Math.abs(dx) > Math.abs(dy)) doMove(dx > 0 ? 'r' : 'l', true, 'swipe');
+  else doMove(dy > 0 ? 'd' : 'u', true, 'swipe');
 }
 
 function bindSwipeControls() {
@@ -329,8 +342,29 @@ function syncLbLevel() {
   if (lbNextLevel) lbNextLevel.disabled = lbLevelIndex >= levels.length - 1;
 }
 
-function doMove(key, recordMove = true) {
-  if (recordMove && isPlayerInputLocked()) return;
+function doMove(key, recordMove = true, source = 'unknown') {
+  // #region agent log
+  emitDebugLog('H2', 'client/js/game.js:doMove:entry', 'doMove called', {
+    key,
+    recordMove,
+    source,
+    locked: isPlayerInputLocked(),
+    isPlaybackActive,
+    steps,
+  });
+  // #endregion
+  if (recordMove && isPlayerInputLocked()) {
+    // #region agent log
+    emitDebugLog('H2', 'client/js/game.js:doMove:blocked', 'Blocked move during lock', {
+      key,
+      recordMove,
+      source,
+      isPlaybackActive,
+      steps,
+    });
+    // #endregion
+    return;
+  }
   if (!state) return;
   const next = tryMove(state, key, recordMove);
   if (!next) return;
@@ -338,6 +372,15 @@ function doMove(key, recordMove = true) {
     positionHistory.push({ player: { ...state.player }, boxes: state.boxes.map((b) => ({ ...b })) });
     moveHistory.push(key);
     steps++;
+    // #region agent log
+    emitDebugLog('H3', 'client/js/game.js:doMove:recorded', 'Recorded player move', {
+      key,
+      source,
+      steps,
+      moveHistoryLength: moveHistory.length,
+      isPlaybackActive,
+    });
+    // #endregion
   }
   state = next;
   renderBoard();
@@ -373,6 +416,13 @@ function getMovesString() {
 }
 
 function stopPlayback() {
+  // #region agent log
+  emitDebugLog('H1', 'client/js/game.js:stopPlayback', 'stopPlayback invoked', {
+    hadTimer: !!playbackTimer,
+    wasPlaybackActive: isPlaybackActive,
+    steps,
+  });
+  // #endregion
   if (playbackTimer) {
     clearInterval(playbackTimer);
     playbackTimer = null;
@@ -385,6 +435,14 @@ function stopPlayback() {
 
 function startPlayback(movesStr) {
   stopPlayback();
+  // #region agent log
+  emitDebugLog('H1', 'client/js/game.js:startPlayback:entry', 'startPlayback called', {
+    rawMovesLength: (movesStr || '').length,
+    hasState: !!state,
+    lockedBefore: isPlayerInputLocked(),
+    steps,
+  });
+  // #endregion
   if (!movesStr || !state) return;
   const keys = movesStr
     .trim()
@@ -394,13 +452,20 @@ function startPlayback(movesStr) {
   if (keys.length === 0) return;
   isPlaybackActive = true;
   updateGameControlAvailability();
+  // #region agent log
+  emitDebugLog('H1', 'client/js/game.js:startPlayback:activated', 'Playback activated', {
+    playbackMovesLength: keys.length,
+    lockedAfter: isPlayerInputLocked(),
+    steps,
+  });
+  // #endregion
   let i = 0;
   playbackTimer = setInterval(() => {
     if (i >= keys.length) {
       stopPlayback();
       return;
     }
-    doMove(keys[i], false);
+    doMove(keys[i], false, 'playback');
     i++;
   }, 300);
 }
@@ -639,7 +704,17 @@ function initGame() {
   [btnLeft, btnUp, btnDown, btnRight].forEach((btn, i) => {
     if (!btn) return;
     const key = ['l', 'u', 'd', 'r'][i];
-    btn.addEventListener('click', () => doMove(key));
+    btn.addEventListener('click', () => {
+      // #region agent log
+      emitDebugLog('H4', 'client/js/game.js:button:direction', 'Direction button click', {
+        key,
+        locked: isPlayerInputLocked(),
+        isPlaybackActive,
+        steps,
+      });
+      // #endregion
+      doMove(key, true, 'button');
+    });
   });
   if (btnUndo) btnUndo.addEventListener('click', () => undo());
   if (btnPrevLevel) btnPrevLevel.addEventListener('click', () => {
@@ -691,13 +766,25 @@ function initGame() {
     if (winOverlay && winOverlay.classList.contains('visible')) return;
     const map = { ArrowLeft: 'l', ArrowRight: 'r', ArrowUp: 'u', ArrowDown: 'd', KeyA: 'l', KeyD: 'r', KeyW: 'u', KeyS: 'd' };
     const key = map[e.code];
+    if (key || e.code === 'Backspace' || e.code === 'KeyZ') {
+      // #region agent log
+      emitDebugLog('H4', 'client/js/game.js:keydown', 'Keydown input observed', {
+        code: e.code,
+        mappedMove: key || null,
+        locked: isPlayerInputLocked(),
+        isPlaybackActive,
+        panelId: panel.id,
+        steps,
+      });
+      // #endregion
+    }
     if (isPlayerInputLocked()) {
       if (key || e.code === 'Backspace' || e.code === 'KeyZ') e.preventDefault();
       return;
     }
     if (key) {
       e.preventDefault();
-      doMove(key);
+      doMove(key, true, 'keydown');
     } else if (e.code === 'Backspace' || e.code === 'KeyZ') {
       e.preventDefault();
       undo();

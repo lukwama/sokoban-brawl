@@ -5,7 +5,7 @@
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import { readFileSync, statSync } from 'fs';
+import { appendFileSync, mkdirSync, readFileSync, statSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { initDb, getLeaderboard, hasDuplicateMoves, insertRecord } from './db.js';
@@ -48,6 +48,14 @@ const httpServer = createServer(app);
 const io = new Server(httpServer, { cors: { origin: '*' } });
 
 const PORT = process.env.PORT || 3000;
+const DEBUG_LOG_PATH = '/opt/cursor/logs/debug.log';
+
+function appendDebugLog(entry) {
+  try {
+    mkdirSync('/opt/cursor/logs', { recursive: true });
+    appendFileSync(DEBUG_LOG_PATH, `${JSON.stringify(entry)}\n`);
+  } catch (_) {}
+}
 
 async function start() {
   await initDb();
@@ -58,6 +66,18 @@ async function start() {
 
   app.get('/api/levels', (req, res) => {
     res.json({ levels });
+  });
+
+  app.post('/api/debug/client', (req, res) => {
+    const payload = req.body && typeof req.body === 'object' ? req.body : {};
+    appendDebugLog({
+      hypothesisId: typeof payload.hypothesisId === 'string' ? payload.hypothesisId : 'unknown',
+      location: typeof payload.location === 'string' ? payload.location : 'unknown',
+      message: typeof payload.message === 'string' ? payload.message : 'client log',
+      data: payload.data && typeof payload.data === 'object' ? payload.data : {},
+      timestamp: Number.isFinite(payload.timestamp) ? payload.timestamp : Date.now(),
+    });
+    res.sendStatus(204);
   });
 
   app.get('/api/leaderboard/:levelId', (req, res) => {
