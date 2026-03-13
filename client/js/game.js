@@ -480,7 +480,7 @@ async function refreshLeaderboard() {
         playBtn.addEventListener('click', () => {
           showTab('game');
           loadLevel(lbLevelIndex);
-          setTimeout(() => startPlayback(r.moves || ''), 100);
+          startPlayback(r.moves || '');
         });
         tr.innerHTML = `<td>${r.rank}</td><td>${r.playerName || 'Player'}</td><td>${r.steps}</td><td></td>`;
         tr.querySelector('td:nth-child(4)').appendChild(playBtn);
