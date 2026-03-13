@@ -78,6 +78,7 @@ let moveHistory = [];
 let positionHistory = [];
 let steps = 0;
 let playbackTimer = null;
+let isPlaybackActive = false;
 let lbLevelIndex = 0;
 let controlMode = 'buttons';
 let swipeStart = null;
@@ -93,6 +94,10 @@ const btnUndo = document.getElementById('btnUndo');
 const btnReset = document.getElementById('btnReset');
 const btnSubmit = document.getElementById('btnSubmitScore');
 const btnNextLevelAfterWin = document.getElementById('btnNextLevelAfterWin');
+const btnLeft = document.getElementById('btnLeft');
+const btnUp = document.getElementById('btnUp');
+const btnDown = document.getElementById('btnDown');
+const btnRight = document.getElementById('btnRight');
 const connIcon = document.getElementById('connectionIcon');
 const leaderboardBody = document.getElementById('leaderboardBody');
 const lbLevelNum = document.getElementById('lbLevelNum');
@@ -190,6 +195,7 @@ function bindControlModeButtons() {
 }
 
 function handleSwipeMove(dx, dy) {
+  if (!canAcceptPlayerInput()) return;
   if (Math.abs(dx) < 24 && Math.abs(dy) < 24) return;
   if (Math.abs(dx) > Math.abs(dy)) doMove(dx > 0 ? 'r' : 'l');
   else doMove(dy > 0 ? 'd' : 'u');
@@ -200,12 +206,9 @@ function bindSwipeControls() {
   if (!panelGame) return;
 
   panelGame.addEventListener('touchstart', (e) => {
-    if (controlMode !== 'swipe') return;
-    const panel = document.querySelector('.tab-panel.active');
-    if (!panel || panel.id !== 'panelGame') return;
+    if (controlMode !== 'swipe' || !canAcceptPlayerInput()) return;
     // Don't intercept touches on buttons
     if (e.target.closest('button')) return;
-    
     const touch = e.changedTouches[0];
     if (!touch) return;
     swipeStart = { x: touch.clientX, y: touch.clientY };
@@ -220,11 +223,8 @@ function bindSwipeControls() {
   }, { passive: false });
 
   panelGame.addEventListener('touchend', (e) => {
-    if (controlMode !== 'swipe' || !swipeStart) return;
-    const panel = document.querySelector('.tab-panel.active');
-    if (!panel || panel.id !== 'panelGame') return;
+    if (controlMode !== 'swipe' || !swipeStart || !canAcceptPlayerInput()) return;
     if (e.target.closest('button')) return;
-    
     const touch = e.changedTouches[0];
     if (!touch) return;
     const dx = touch.clientX - swipeStart.x;
@@ -284,10 +284,12 @@ function renderBoard() {
     const isCustom = levelIndex >= levels.length - 3;
     badgeEl.hidden = !isCustom;
   }
+  updateGameplayControlState();
   scheduleBoardLayout();
 }
 
 function loadLevel(idx) {
+  stopPlayback();
   const all = getAllLevels();
   if (idx < 0 || idx >= all.length) return;
   levelIndex = idx;
@@ -306,8 +308,7 @@ function loadLevel(idx) {
   if (boardEl) boardEl.classList.remove('win-glow');
   const area = document.querySelector('.game-area');
   if (area) area.classList.remove('fade-out');
-  if (btnPrevLevel) btnPrevLevel.disabled = levelIndex <= 0;
-  if (btnNextLevel) btnNextLevel.disabled = levelIndex >= all.length - 1;
+  updateGameplayControlState();
 }
 
 function syncLbLevel() {
@@ -344,6 +345,7 @@ function doMove(key, recordMove = true) {
 }
 
 function undo() {
+  if (isPlaybackActive) return;
   if (positionHistory.length === 0) return;
   const prev = positionHistory.pop();
   state = { ...state, player: prev.player, boxes: prev.boxes };
@@ -363,12 +365,17 @@ function stopPlayback() {
     clearInterval(playbackTimer);
     playbackTimer = null;
   }
+  isPlaybackActive = false;
+  updateGameplayControlState();
 }
 
 function startPlayback(movesStr) {
   stopPlayback();
   if (!movesStr || !state) return;
   const keys = movesStr.trim().toLowerCase().split('');
+  if (!keys.length) return;
+  isPlaybackActive = true;
+  updateGameplayControlState();
   let i = 0;
   steps = 0;
   if (stepsEl) stepsEl.textContent = steps;
@@ -382,6 +389,31 @@ function startPlayback(movesStr) {
     if (stepsEl) stepsEl.textContent = steps;
     i++;
   }, 300);
+}
+
+function updateGameplayControlState() {
+  const all = getAllLevels();
+  const disableGameplay = !state || isPlaybackActive;
+  const directionalButtons = [btnLeft, btnUp, btnDown, btnRight];
+
+  directionalButtons.forEach((btn) => {
+    if (btn) btn.disabled = disableGameplay;
+  });
+
+  if (btnUndo) btnUndo.disabled = disableGameplay || positionHistory.length === 0;
+  if (btnReset) btnReset.disabled = disableGameplay;
+  if (btnSubmit) btnSubmit.disabled = disableGameplay || moveHistory.length === 0;
+  if (btnPrevLevel) btnPrevLevel.disabled = disableGameplay || levelIndex <= 0;
+  if (btnNextLevel) btnNextLevel.disabled = disableGameplay || levelIndex >= all.length - 1;
+  if (btnNextLevelAfterWin) btnNextLevelAfterWin.disabled = disableGameplay || levelIndex >= all.length - 1;
+}
+
+function canAcceptPlayerInput() {
+  if (isPlaybackActive) return false;
+  const panel = document.querySelector('.tab-panel.active');
+  if (!panel || panel.id !== 'panelGame') return false;
+  if (winOverlay && winOverlay.classList.contains('visible')) return false;
+  return true;
 }
 
 async function fetchLevels() {
@@ -628,21 +660,38 @@ function initEditor() {
 }
 
 function initGame() {
-  const leftBtn = document.getElementById('btnLeft');
-  const upBtn = document.getElementById('btnUp');
-  const downBtn = document.getElementById('btnDown');
-  const rightBtn = document.getElementById('btnRight');
-  [leftBtn, upBtn, downBtn, rightBtn].forEach((btn, i) => {
+  [btnLeft, btnUp, btnDown, btnRight].forEach((btn, i) => {
     if (!btn) return;
     const key = ['l', 'u', 'd', 'r'][i];
-    btn.addEventListener('click', () => doMove(key));
+    btn.addEventListener('click', () => {
+      if (!canAcceptPlayerInput()) return;
+      doMove(key);
+    });
   });
-  if (btnUndo) btnUndo.addEventListener('click', undo);
-  if (btnPrevLevel) btnPrevLevel.addEventListener('click', () => loadLevel(levelIndex - 1));
-  if (btnNextLevel) btnNextLevel.addEventListener('click', () => loadLevel(levelIndex + 1));
-  if (btnReset) btnReset.addEventListener('click', () => loadLevel(levelIndex));
-  if (btnSubmit) btnSubmit.addEventListener('click', submitScore);
-  if (btnNextLevelAfterWin) btnNextLevelAfterWin.addEventListener('click', () => loadLevel(levelIndex + 1));
+  if (btnUndo) btnUndo.addEventListener('click', () => {
+    if (!canAcceptPlayerInput()) return;
+    undo();
+  });
+  if (btnPrevLevel) btnPrevLevel.addEventListener('click', () => {
+    if (!canAcceptPlayerInput()) return;
+    loadLevel(levelIndex - 1);
+  });
+  if (btnNextLevel) btnNextLevel.addEventListener('click', () => {
+    if (!canAcceptPlayerInput()) return;
+    loadLevel(levelIndex + 1);
+  });
+  if (btnReset) btnReset.addEventListener('click', () => {
+    if (!canAcceptPlayerInput()) return;
+    loadLevel(levelIndex);
+  });
+  if (btnSubmit) btnSubmit.addEventListener('click', () => {
+    if (!canAcceptPlayerInput()) return;
+    submitScore();
+  });
+  if (btnNextLevelAfterWin) btnNextLevelAfterWin.addEventListener('click', () => {
+    if (!canAcceptPlayerInput()) return;
+    loadLevel(levelIndex + 1);
+  });
 
   document.querySelectorAll('.tab-btn').forEach((btn) => {
     btn.addEventListener('click', () => showTab(btn.dataset.tab));
@@ -673,9 +722,7 @@ function initGame() {
   applyControlMode(getPreferredControlMode());
 
   document.addEventListener('keydown', (e) => {
-    const panel = document.querySelector('.tab-panel.active');
-    if (!panel || panel.id !== 'panelGame') return;
-    if (winOverlay && winOverlay.classList.contains('visible')) return;
+    if (!canAcceptPlayerInput()) return;
     const map = { ArrowLeft: 'l', ArrowRight: 'r', ArrowUp: 'u', ArrowDown: 'd', KeyA: 'l', KeyD: 'r', KeyW: 'u', KeyS: 'd' };
     const key = map[e.code];
     if (key) {
