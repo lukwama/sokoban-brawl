@@ -176,7 +176,8 @@ function applyControlMode(mode) {
   const resolved = getResolvedControlMode(mode);
   controlMode = resolved;
   document.body.dataset.controlMode = resolved;
-  if (swipeHintEl) swipeHintEl.hidden = resolved !== 'swipe';
+  // hide hint to give full screen feeling
+  if (swipeHintEl) swipeHintEl.hidden = true; 
   document.querySelectorAll('.mode-btn').forEach((btn) => {
     btn.classList.toggle('active', btn.dataset.controlMode === mode);
   });
@@ -201,22 +202,29 @@ function handleSwipeMove(dx, dy) {
 }
 
 function bindSwipeControls() {
-  if (!gameAreaEl) return;
-  gameAreaEl.addEventListener('touchstart', (e) => {
+  const panelGame = document.getElementById('panelGame');
+  if (!panelGame) return;
+
+  panelGame.addEventListener('touchstart', (e) => {
     if (controlMode !== 'swipe' || !canAcceptPlayerInput()) return;
+    // Don't intercept touches on buttons
+    if (e.target.closest('button')) return;
     const touch = e.changedTouches[0];
     if (!touch) return;
     swipeStart = { x: touch.clientX, y: touch.clientY };
   }, { passive: true });
 
-  gameAreaEl.addEventListener('touchmove', (e) => {
+  panelGame.addEventListener('touchmove', (e) => {
+    if (controlMode !== 'swipe') return;
     const panel = document.querySelector('.tab-panel.active');
     if (!panel || panel.id !== 'panelGame') return;
+    if (e.target.closest('button')) return;
     e.preventDefault();
   }, { passive: false });
 
-  gameAreaEl.addEventListener('touchend', (e) => {
+  panelGame.addEventListener('touchend', (e) => {
     if (controlMode !== 'swipe' || !swipeStart || !canAcceptPlayerInput()) return;
+    if (e.target.closest('button')) return;
     const touch = e.changedTouches[0];
     if (!touch) return;
     const dx = touch.clientX - swipeStart.x;
@@ -369,12 +377,16 @@ function startPlayback(movesStr) {
   isPlaybackActive = true;
   updateGameplayControlState();
   let i = 0;
+  steps = 0;
+  if (stepsEl) stepsEl.textContent = steps;
   playbackTimer = setInterval(() => {
     if (i >= keys.length) {
       stopPlayback();
       return;
     }
     doMove(keys[i], false);
+    steps++;
+    if (stepsEl) stepsEl.textContent = steps;
     i++;
   }, 300);
 }
@@ -481,8 +493,21 @@ async function refreshLeaderboard() {
           loadLevel(lbLevelIndex);
           setTimeout(() => startPlayback(r.moves || ''), 100);
         });
-        tr.innerHTML = `<td>${r.rank}</td><td>${r.playerName || 'Player'}</td><td>${r.steps}</td><td></td>`;
-        tr.querySelector('td:nth-child(4)').appendChild(playBtn);
+        
+        let timeStr = '';
+        if (r.timestamp) {
+          const d = new Date(r.timestamp);
+          const yyyy = d.getFullYear();
+          const mm = String(d.getMonth() + 1).padStart(2, '0');
+          const dd = String(d.getDate()).padStart(2, '0');
+          const hh = String(d.getHours()).padStart(2, '0');
+          const min = String(d.getMinutes()).padStart(2, '0');
+          const ss = String(d.getSeconds()).padStart(2, '0');
+          timeStr = `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
+        }
+        
+        tr.innerHTML = `<td>${r.rank}</td><td>${r.playerName || 'Player'}</td><td>${timeStr}</td><td>${r.steps}</td><td></td>`;
+        tr.querySelector('td:nth-child(5)').appendChild(playBtn);
         leaderboardBody.appendChild(tr);
       });
     }
