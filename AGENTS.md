@@ -66,3 +66,53 @@ This document guides AI Agents on this project’s architecture and conventions.
 * 撰寫代碼時請確保模組化，以便從 HTML5 邏輯無痛遷移至 Godot GDScript。
 * **開源與敏感資訊**：本專案可被公開查閱，文件與程式碼中不得包含實際主機 IP、密碼、API 金鑰或 Token；連線與部署資訊請以佔位符（如 `YOUR_SERVER_IP`）或環境變數說明取代。
 * **文件與註解（國際社群）**：本專案面向國際社群，**說明與備註須同時提供 en_US（英文）與 zh_TW（繁體中文）**，方便全球開發者貢獻。**順序**：**en_US 區塊在上方、zh_TW 區塊在下方**。適用於 README、docs、API 說明、重要程式註解與 release notes。
+
+---
+
+## Cursor Cloud specific instructions
+
+### en_US (English)
+
+**Architecture**: Single Node.js process (Express + Socket.io + sql.js embedded SQLite). The server serves both the REST API and static client files on port 3000.
+
+**Running the dev server**:
+```bash
+npm install   # install dependencies
+npm run dev   # starts server at http://localhost:3000
+```
+
+**Verification**:
+- Health check: `curl http://localhost:3000/health` → `{"status":"ok","service":"sokoban-brawl"}`
+- Leaderboard API: `GET /api/leaderboard/:levelId`, `POST /api/leaderboard/:levelId`
+- Client UI: open `http://localhost:3000/` in a browser
+
+**Caveats**:
+- No lint or test scripts are configured in `package.json`. There is no ESLint config or test framework set up.
+- The project uses ESM (`"type": "module"` in `package.json`).
+- SQLite data is stored at `data/sokoban.db` (auto-created on first run). Deleting this file resets all leaderboard data.
+- No `.env` file is required for local development; the server defaults to port 3000.
+- The `requirements.txt` is effectively empty (Python/venv is optional, only used for `scripts/verify_env.py`).
+
+---
+
+### zh_TW（繁體中文）
+
+**架構**：單一 Node.js 程序（Express + Socket.io + sql.js 嵌入式 SQLite）。伺服器同時提供 REST API 和靜態客戶端檔案，預設 port 3000。
+
+**啟動開發伺服器**：
+```bash
+npm install   # 安裝依賴
+npm run dev   # 啟動伺服器於 http://localhost:3000
+```
+
+**驗證**：
+- 健康檢查：`curl http://localhost:3000/health` → `{"status":"ok","service":"sokoban-brawl"}`
+- 排行榜 API：`GET /api/leaderboard/:levelId`、`POST /api/leaderboard/:levelId`
+- 客戶端 UI：瀏覽器開啟 `http://localhost:3000/`
+
+**注意事項**：
+- `package.json` 中未配置 lint 或 test 腳本，無 ESLint 或測試框架。
+- 專案使用 ESM（`package.json` 中 `"type": "module"`）。
+- SQLite 資料儲存於 `data/sokoban.db`（首次執行時自動建立），刪除此檔案會重置所有排行榜資料。
+- 本地開發不需要 `.env` 檔案，伺服器預設使用 port 3000。
+- `requirements.txt` 實際為空（Python/venv 為可選，僅用於 `scripts/verify_env.py`）。
