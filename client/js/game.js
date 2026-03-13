@@ -371,7 +371,8 @@ function startPlayback(movesStr) {
   let i = 0;
   playbackTimer = setInterval(() => {
     if (i >= keys.length) {
-      stopPlayback();
+      clearInterval(playbackTimer);
+      setTimeout(() => loadLevel(levelIndex), 1500);
       return;
     }
     doMove(keys[i], false);
