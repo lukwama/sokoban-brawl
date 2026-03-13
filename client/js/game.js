@@ -189,6 +189,7 @@ function bindControlModeButtons() {
 }
 
 function handleSwipeMove(dx, dy) {
+  if (playbackTimer) return;
   if (Math.abs(dx) < 24 && Math.abs(dy) < 24) return;
   if (Math.abs(dx) > Math.abs(dy)) doMove(dx > 0 ? 'r' : 'l');
   else doMove(dy > 0 ? 'd' : 'u');
@@ -608,7 +609,7 @@ function initGame() {
   [leftBtn, upBtn, downBtn, rightBtn].forEach((btn, i) => {
     if (!btn) return;
     const key = ['l', 'u', 'd', 'r'][i];
-    btn.addEventListener('click', () => doMove(key));
+    btn.addEventListener('click', () => { if (playbackTimer) return; doMove(key); });
   });
   if (btnUndo) btnUndo.addEventListener('click', undo);
   if (btnPrevLevel) btnPrevLevel.addEventListener('click', () => loadLevel(levelIndex - 1));
@@ -649,6 +650,7 @@ function initGame() {
     const panel = document.querySelector('.tab-panel.active');
     if (!panel || panel.id !== 'panelGame') return;
     if (winOverlay && winOverlay.classList.contains('visible')) return;
+    if (playbackTimer) return;
     const map = { ArrowLeft: 'l', ArrowRight: 'r', ArrowUp: 'u', ArrowDown: 'd', KeyA: 'l', KeyD: 'r', KeyW: 'u', KeyS: 'd' };
     const key = map[e.code];
     if (key) {
