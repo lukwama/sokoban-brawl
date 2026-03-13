@@ -8,6 +8,63 @@ const STORAGE_NAME = 'sokoban_brawl_player_name';
 const STORAGE_CUSTOM = 'sokobanCustomLevels';
 const STORAGE_CONTROL_MODE = 'sokoban_brawl_control_mode';
 
+// en_US: Modal dialog system — replaces native alert/confirm
+// zh_TW: Modal 對話框系統 — 取代原生 alert/confirm
+function showModal({ icon = 'info', title = '', body = '', buttons = [], onClose = null } = {}) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+
+    const iconClassMap = { success: 'modal-icon-success', error: 'modal-icon-error', info: 'modal-icon-info', confirm: 'modal-icon-confirm' };
+    const iconTextMap = { success: '✓', error: '✕', info: 'ℹ', confirm: '?' };
+
+    let html = `<div class="modal-card">`;
+    html += `<span class="modal-icon ${iconClassMap[icon] || 'modal-icon-info'}">${iconTextMap[icon] || 'ℹ'}</span>`;
+    if (title) html += `<div class="modal-title">${title}</div>`;
+    if (body) html += `<div class="modal-body">${body}</div>`;
+    html += `<div class="modal-actions">`;
+    buttons.forEach((btn, i) => {
+      const cls = btn.primary ? 'modal-btn modal-btn-primary' : (btn.danger ? 'modal-btn modal-btn-danger' : 'modal-btn');
+      html += `<button class="${cls}" data-idx="${i}">${btn.text}</button>`;
+    });
+    html += `</div></div>`;
+    overlay.innerHTML = html;
+    document.body.appendChild(overlay);
+
+    requestAnimationFrame(() => overlay.classList.add('visible'));
+
+    function close(value) {
+      overlay.classList.remove('visible');
+      setTimeout(() => overlay.remove(), 200);
+      if (onClose) onClose(value);
+      resolve(value);
+    }
+
+    overlay.querySelectorAll('.modal-btn').forEach((btn) => {
+      btn.addEventListener('click', () => close(buttons[+btn.dataset.idx]?.value));
+    });
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) close(null);
+    });
+  });
+}
+
+function showAlert(title, body, icon = 'info') {
+  return showModal({ icon, title, body, buttons: [{ text: '確定', value: true, primary: true }] });
+}
+
+function showConfirm(title, body, icon = 'confirm') {
+  return showModal({ icon, title, body, buttons: [{ text: '取消', value: false }, { text: '確定', value: true, primary: true }] });
+}
+
+function showError(title, body) {
+  return showAlert(title, body, 'error');
+}
+
+function showSuccess(title, body) {
+  return showAlert(title, body, 'success');
+}
+
 function getBaseUrl() {
   const input = document.getElementById('serverUrl');
   const url = (input && input.value.trim()) || localStorage.getItem(STORAGE_URL) || '';
@@ -23,12 +80,12 @@ function setBaseUrl(url) {
 function parseLevel(levelString) {
   const rows = levelString.trim().split('\n').map((r) => r.split(''));
   const R = rows.length;
-  const C = rows[0]?.length || 0;
+  const C = Math.max(0, ...rows.map((r) => r.length));
   let player = null;
   const boxes = [];
   const targets = [];
   for (let row = 0; row < R; row++) {
-    for (let col = 0; col < C; col++) {
+    for (let col = 0; col < rows[row].length; col++) {
       const c = rows[row][col];
       if (c === '@') player = { row, col };
       if (c === '$' || c === '*') boxes.push({ row, col });
@@ -258,8 +315,9 @@ function renderBoard() {
   boardEl.style.gridTemplateRows = `repeat(${R}, 1fr)`;
   for (let row = 0; row < R; row++) {
     for (let col = 0; col < C; col++) {
-      const baseCell = grid[row][col];
-      const isWall = baseCell === '#' || baseCell === '?';
+      const baseCell = grid[row]?.[col] ?? '?';
+      const isWall = baseCell === '#';
+      const isVoid = baseCell === '?';
       const isTarget = targetSet.has(`${row},${col}`);
       const isBox = boxSet.has(`${row},${col}`);
       const isPlayer = playerAt === `${row},${col}`;
@@ -269,7 +327,8 @@ function renderBoard() {
       div.dataset.row = row;
       div.dataset.col = col;
 
-      if (isWall) div.classList.add('wall');
+      if (isVoid) div.classList.add('void');
+      else if (isWall) div.classList.add('wall');
       else {
         div.classList.add('empty');
         if (isTarget) div.classList.add('target');
@@ -522,10 +581,9 @@ async function handleCustomLevelCompletion() {
     const playerName = (document.getElementById('playerName') && document.getElementById('playerName').value.trim()) || 'Player';
     const moves = getMovesString();
     
-    // Check player name
     const defaultNames = ['Player', 'player', '匿名', '玩家', 'Anonymous'];
     if (defaultNames.includes(playerName)) {
-      alert('請先在設定中設定您的玩家名稱（不可使用預設名稱 Player）\nPlease set your player name in settings (cannot use default name "Player")');
+      await showError('玩家名稱未設定', '請先在設定中設定您的玩家名稱（不可使用預設名稱 Player）\nPlease set your player name in settings.');
       showTab('settings');
       pendingCustomLevelUpload = null;
       customLevels = [];
@@ -534,7 +592,7 @@ async function handleCustomLevelCompletion() {
       return;
     }
     
-    const confirmed = confirm(`恭喜通關！\n\n是否要將此關卡上傳到伺服器？\n上傳者：${playerName}\n步數：${steps}\n\nCongratulations!\n\nUpload this level to the server?\nCreator: ${playerName}\nSteps: ${steps}`);
+    const confirmed = await showConfirm('恭喜通關！', `是否要將此關卡上傳到伺服器？\n上傳者：${playerName}\n步數：${steps}\n\nUpload this level?\nCreator: ${playerName}\nSteps: ${steps}`, 'success');
     
     if (confirmed) {
       await uploadCustomLevel(pendingCustomLevelUpload.levelData, playerName, moves);
@@ -574,18 +632,16 @@ async function uploadCustomLevel(levelData, creatorName, solutionMoves) {
     if (res.ok && data.success) {
       setBaseUrl(base);
       setConnectionStatus(true);
-      alert(`關卡上傳成功！\n\n關卡 ID: ${data.levelId}\n網址: ${data.levelUrl}\n\nLevel uploaded successfully!\n\nLevel ID: ${data.levelId}\nURL: ${data.levelUrl}`);
-      
-      // Reload custom levels
+      await showSuccess('上傳成功！', `關卡 ID: ${data.levelId}\n網址: ${data.levelUrl}\n\nLevel ID: ${data.levelId}\nURL: ${data.levelUrl}`);
       await loadCustomLevelsFromServer();
     } else {
       setConnectionStatus(false);
       const errorMsg = data.message || data.error || 'Unknown error';
-      alert(`上傳失敗：${errorMsg}\n\nUpload failed: ${errorMsg}`);
+      await showError('上傳失敗', `${errorMsg}\nUpload failed: ${errorMsg}`);
     }
   } catch (err) {
     setConnectionStatus(false);
-    alert(`上傳失敗：網路錯誤\n\nUpload failed: Network error`);
+    await showError('上傳失敗', '網路錯誤\nUpload failed: Network error');
   }
 }
 
@@ -713,7 +769,8 @@ function editorRender() {
       cell.dataset.r = r;
           cell.dataset.c = c;
       const ch = editorGrid[r]?.[c] ?? ' ';
-      if (ch === '#' || ch === '?') cell.classList.add('wall');
+      if (ch === '?') cell.classList.add('void');
+      else if (ch === '#') cell.classList.add('wall');
       else {
         cell.classList.add('empty');
         if (ch === '.' || ch === '*') cell.classList.add('target');
@@ -763,38 +820,48 @@ function editorResize() {
   editorUpdateStats();
 }
 
-function editorSave() {
+async function editorSave() {
   const str = editorGridToState();
-  const parsed = parseLevel(str);
-  const boxCount = parsed.boxes.length;
-  const targetCount = parsed.targets.length;
-  const playerCount = parsed.player ? 1 : 0;
-  
-  if (boxCount !== targetCount) {
-    alert('關卡無效：箱子數量必須等於目標數量\nInvalid level: Box count must equal target count');
-    return;
+  // en_US: Validate directly from editorGrid to avoid trim() issues
+  // zh_TW: 直接從 editorGrid 驗證，避免 trim() 導致的問題
+  let boxCount = 0, targetCount = 0, playerCount = 0;
+  for (let r = 0; r < editorH; r++) {
+    for (let c = 0; c < editorW; c++) {
+      const ch = editorGrid[r]?.[c] ?? ' ';
+      if (ch === '$' || ch === '*') boxCount++;
+      if (ch === '.' || ch === '*') targetCount++;
+      if (ch === '@') playerCount++;
+    }
   }
-  
+
   if (playerCount !== 1) {
-    alert('關卡無效：必須有且僅有一個玩家\nInvalid level: Must have exactly one player');
+    await showError('關卡無效', '必須有且僅有一個玩家\nMust have exactly one player');
     return;
   }
-  
+  if (boxCount === 0) {
+    await showError('關卡無效', '至少需要一個箱子\nNeed at least one box');
+    return;
+  }
+  if (boxCount !== targetCount) {
+    await showError('關卡無效', `箱子數量（${boxCount}）必須等於目標數量（${targetCount}）\nBox count (${boxCount}) must equal target count (${targetCount})`);
+    return;
+  }
+
   // en_US: Store level for upload after completion
   // zh_TW: 儲存關卡以便通關後上傳
   pendingCustomLevelUpload = {
     levelData: str,
     timestamp: Date.now()
   };
-  
+
   // en_US: Load level for testing
   // zh_TW: 載入關卡進行測試
   customLevels = [str];
   levelIndex = levels.length;
   loadLevel(levelIndex);
   showTab('game');
-  
-  alert('請先通關此關卡，通關後即可上傳！\nPlease complete this level first, then you can upload it!');
+
+  await showAlert('開始測試通關', '請先通關此關卡，通關後即可上傳！\nPlease complete this level first, then you can upload it!');
 }
 
 function initEditor() {

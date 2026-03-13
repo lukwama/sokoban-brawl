@@ -97,13 +97,13 @@
         <button type="button" id="btnEditorReset" class="icon-btn" aria-label="Reset size">↺</button>
       </header>
       <div class="editor-tools">
-        <button type="button" class="tool-btn active" data-tool="#" aria-label="Wall">▣</button>
-        <button type="button" class="tool-btn" data-tool="?" aria-label="Invisible wall">▢</button>
-        <button type="button" class="tool-btn" data-tool="$" aria-label="Box">▤</button>
-        <button type="button" class="tool-btn" data-tool="." aria-label="Target">◎</button>
-        <button type="button" class="tool-btn" data-tool="@" aria-label="Player">●</button>
-        <button type="button" class="tool-btn" data-tool=" " aria-label="Empty">□</button>
-        <button type="button" class="tool-btn" data-tool="*" aria-label="Box on target">✦</button>
+        <button type="button" class="tool-btn active" data-tool="#" aria-label="Wall"><div class="tile-preview tp-wall"></div><span class="tool-label">牆</span></button>
+        <button type="button" class="tool-btn" data-tool="?" aria-label="Invisible wall"><div class="tile-preview tp-void"></div><span class="tool-label">外牆</span></button>
+        <button type="button" class="tool-btn" data-tool="$" aria-label="Box"><div class="tile-preview tp-box"></div><span class="tool-label">箱子</span></button>
+        <button type="button" class="tool-btn" data-tool="." aria-label="Target"><div class="tile-preview tp-target"></div><span class="tool-label">目標</span></button>
+        <button type="button" class="tool-btn" data-tool="@" aria-label="Player"><div class="tile-preview tp-player"></div><span class="tool-label">玩家</span></button>
+        <button type="button" class="tool-btn" data-tool=" " aria-label="Empty"><div class="tile-preview tp-empty"></div><span class="tool-label">空地</span></button>
+        <button type="button" class="tool-btn" data-tool="*" aria-label="Box on target"><div class="tile-preview tp-box-on-target"></div><span class="tool-label">達成</span></button>
       </div>
       <div class="editor-area">
         <div id="editorBoard" class="editor-board"></div>
