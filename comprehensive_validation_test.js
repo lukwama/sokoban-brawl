@@ -152,7 +152,7 @@ async function runTests() {
       body: JSON.stringify({
         levelData: testLevel,
         creatorName: '作弊玩家D',
-        solutionMoves: 'dd'
+        solutionMoves: 'rd'
       })
     });
     const data = await res.json();
