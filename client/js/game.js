@@ -78,6 +78,7 @@ let moveHistory = [];
 let positionHistory = [];
 let steps = 0;
 let playbackTimer = null;
+let isPlaybackActive = false;
 let lbLevelIndex = 0;
 let controlMode = 'buttons';
 let swipeStart = null;
@@ -92,6 +93,10 @@ const btnNextLevel = document.getElementById('btnNextLevel');
 const btnUndo = document.getElementById('btnUndo');
 const btnReset = document.getElementById('btnReset');
 const btnSubmit = document.getElementById('btnSubmitScore');
+const btnLeft = document.getElementById('btnLeft');
+const btnUp = document.getElementById('btnUp');
+const btnDown = document.getElementById('btnDown');
+const btnRight = document.getElementById('btnRight');
 const btnNextLevelAfterWin = document.getElementById('btnNextLevelAfterWin');
 const connIcon = document.getElementById('connectionIcon');
 const leaderboardBody = document.getElementById('leaderboardBody');
@@ -188,7 +193,24 @@ function bindControlModeButtons() {
   });
 }
 
+function isPlayerInputLocked() {
+  return isPlaybackActive;
+}
+
+function updateGameControlAvailability() {
+  const allLevels = getAllLevels();
+  const maxLevelIndex = allLevels.length - 1;
+  const locked = isPlayerInputLocked();
+
+  [btnLeft, btnUp, btnDown, btnRight, btnUndo, btnReset, btnSubmit].forEach((btn) => {
+    if (btn) btn.disabled = locked;
+  });
+  if (btnPrevLevel) btnPrevLevel.disabled = locked || levelIndex <= 0;
+  if (btnNextLevel) btnNextLevel.disabled = locked || levelIndex >= maxLevelIndex;
+}
+
 function handleSwipeMove(dx, dy) {
+  if (isPlayerInputLocked()) return;
   if (Math.abs(dx) < 24 && Math.abs(dy) < 24) return;
   if (Math.abs(dx) > Math.abs(dy)) doMove(dx > 0 ? 'r' : 'l');
   else doMove(dy > 0 ? 'd' : 'u');
@@ -197,7 +219,7 @@ function handleSwipeMove(dx, dy) {
 function bindSwipeControls() {
   if (!gameAreaEl) return;
   gameAreaEl.addEventListener('touchstart', (e) => {
-    if (controlMode !== 'swipe') return;
+    if (controlMode !== 'swipe' || isPlayerInputLocked()) return;
     const panel = document.querySelector('.tab-panel.active');
     if (!panel || panel.id !== 'panelGame') return;
     const touch = e.changedTouches[0];
@@ -278,6 +300,7 @@ function renderBoard() {
 }
 
 function loadLevel(idx) {
+  stopPlayback();
   const all = getAllLevels();
   if (idx < 0 || idx >= all.length) return;
   levelIndex = idx;
@@ -296,8 +319,7 @@ function loadLevel(idx) {
   if (boardEl) boardEl.classList.remove('win-glow');
   const area = document.querySelector('.game-area');
   if (area) area.classList.remove('fade-out');
-  if (btnPrevLevel) btnPrevLevel.disabled = levelIndex <= 0;
-  if (btnNextLevel) btnNextLevel.disabled = levelIndex >= all.length - 1;
+  updateGameControlAvailability();
 }
 
 function syncLbLevel() {
@@ -308,6 +330,7 @@ function syncLbLevel() {
 }
 
 function doMove(key, recordMove = true) {
+  if (recordMove && isPlayerInputLocked()) return;
   if (!state) return;
   const next = tryMove(state, key, recordMove);
   if (!next) return;
@@ -334,6 +357,7 @@ function doMove(key, recordMove = true) {
 }
 
 function undo() {
+  if (isPlayerInputLocked()) return;
   if (positionHistory.length === 0) return;
   const prev = positionHistory.pop();
   state = { ...state, player: prev.player, boxes: prev.boxes };
@@ -353,12 +377,23 @@ function stopPlayback() {
     clearInterval(playbackTimer);
     playbackTimer = null;
   }
+  if (isPlaybackActive) {
+    isPlaybackActive = false;
+    updateGameControlAvailability();
+  }
 }
 
 function startPlayback(movesStr) {
   stopPlayback();
   if (!movesStr || !state) return;
-  const keys = movesStr.trim().toLowerCase().split('');
+  const keys = movesStr
+    .trim()
+    .toLowerCase()
+    .split('')
+    .filter((k) => DIR[k]);
+  if (keys.length === 0) return;
+  isPlaybackActive = true;
+  updateGameControlAvailability();
   let i = 0;
   playbackTimer = setInterval(() => {
     if (i >= keys.length) {
@@ -601,19 +636,24 @@ function initEditor() {
 }
 
 function initGame() {
-  const leftBtn = document.getElementById('btnLeft');
-  const upBtn = document.getElementById('btnUp');
-  const downBtn = document.getElementById('btnDown');
-  const rightBtn = document.getElementById('btnRight');
-  [leftBtn, upBtn, downBtn, rightBtn].forEach((btn, i) => {
+  [btnLeft, btnUp, btnDown, btnRight].forEach((btn, i) => {
     if (!btn) return;
     const key = ['l', 'u', 'd', 'r'][i];
     btn.addEventListener('click', () => doMove(key));
   });
-  if (btnUndo) btnUndo.addEventListener('click', undo);
-  if (btnPrevLevel) btnPrevLevel.addEventListener('click', () => loadLevel(levelIndex - 1));
-  if (btnNextLevel) btnNextLevel.addEventListener('click', () => loadLevel(levelIndex + 1));
-  if (btnReset) btnReset.addEventListener('click', () => loadLevel(levelIndex));
+  if (btnUndo) btnUndo.addEventListener('click', () => undo());
+  if (btnPrevLevel) btnPrevLevel.addEventListener('click', () => {
+    if (isPlayerInputLocked()) return;
+    loadLevel(levelIndex - 1);
+  });
+  if (btnNextLevel) btnNextLevel.addEventListener('click', () => {
+    if (isPlayerInputLocked()) return;
+    loadLevel(levelIndex + 1);
+  });
+  if (btnReset) btnReset.addEventListener('click', () => {
+    if (isPlayerInputLocked()) return;
+    loadLevel(levelIndex);
+  });
   if (btnSubmit) btnSubmit.addEventListener('click', submitScore);
   if (btnNextLevelAfterWin) btnNextLevelAfterWin.addEventListener('click', () => loadLevel(levelIndex + 1));
 
@@ -651,6 +691,10 @@ function initGame() {
     if (winOverlay && winOverlay.classList.contains('visible')) return;
     const map = { ArrowLeft: 'l', ArrowRight: 'r', ArrowUp: 'u', ArrowDown: 'd', KeyA: 'l', KeyD: 'r', KeyW: 'u', KeyS: 'd' };
     const key = map[e.code];
+    if (isPlayerInputLocked()) {
+      if (key || e.code === 'Backspace' || e.code === 'KeyZ') e.preventDefault();
+      return;
+    }
     if (key) {
       e.preventDefault();
       doMove(key);
@@ -662,6 +706,7 @@ function initGame() {
 
   loadCustomLevels();
   if (getAllLevels().length) loadLevel(0);
+  updateGameControlAvailability();
   initEditor();
   scheduleBoardLayout();
   
