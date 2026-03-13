@@ -343,8 +343,34 @@ body {
   flex: 0 0 auto;
 }
 
-body[data-control-mode="swipe"] .dpad {
+body[data-control-mode="swipe"] .controls {
+  position: static;
+  width: 0;
+  height: 0;
+  overflow: visible;
+}
+
+body[data-control-mode="swipe"] .dpad,
+body[data-control-mode="swipe"] .swipe-hint {
   display: none;
+}
+
+body[data-control-mode="swipe"] .undo-btn {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  font-size: 2rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  z-index: 10;
+  opacity: 0.8;
+}
+
+body[data-control-mode="swipe"] .undo-btn:active {
+  opacity: 1;
+  transform: scale(0.9);
 }
 
 body[data-control-mode="buttons"] .swipe-hint {

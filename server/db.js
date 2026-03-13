@@ -89,10 +89,10 @@ export function hasDuplicateMoves(levelId, moves) {
 }
 
 /** 新增記錄，回傳 recordId 與排名 */
-export function insertRecord(levelId, playerName, steps, moves) {
+export function insertRecord(levelId, playerName, steps, moves, customCreatedAt = null) {
   const d = getDb();
   const id = 'rec_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
-  const createdAt = Date.now();
+  const createdAt = customCreatedAt || Date.now();
   d.run(
     `INSERT INTO leaderboard (id, level_id, player_name, steps, moves, created_at)
      VALUES ('${id}', '${escape(levelId)}', '${escape(playerName)}', ${parseInt(steps, 10)}, '${escape(moves)}', ${createdAt})`
