@@ -57,7 +57,7 @@ curl -X POST http://localhost:3000/api/leaderboard/0 -H "Content-Type: applicati
 
 #### 🖥 Server Setup
 
-For a fresh **Ubuntu 24.04** server: [docs/SERVER-SETUP.md](docs/SERVER-SETUP.md) (SSH protection, swap, fail2ban, clone). For production (e.g. https://sokoban.lukwama.com): [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+For a fresh **Ubuntu 24.04** server: [docs/SERVER-SETUP.md](docs/SERVER-SETUP.md) (SSH protection, swap, fail2ban, clone). For production (e.g. https://sokoban.lukwama.com): [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). Direct links to custom levels (e.g. `/singleplayer/57`) work out of the box—no extra Nginx or server config needed.
 
 #### 📚 Auto-Deployment
 
@@ -136,7 +136,7 @@ curl -X POST http://localhost:3000/api/leaderboard/0 -H "Content-Type: applicati
 
 #### 🖥 伺服器設定
 
-全新 **Ubuntu 24.04** 可依 [docs/SERVER-SETUP.md](docs/SERVER-SETUP.md) 進行 SSH 資源保護、swap、fail2ban 與專案拉取。正式環境（例：https://sokoban.lukwama.com）請參考 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)。
+全新 **Ubuntu 24.04** 可依 [docs/SERVER-SETUP.md](docs/SERVER-SETUP.md) 進行 SSH 資源保護、swap、fail2ban 與專案拉取。正式環境（例：https://sokoban.lukwama.com）請參考 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)。自訂關卡直連（如 `/singleplayer/57`）開箱即用，無需額外 Nginx 或伺服器設定。
 
 #### 📚 自動部署
 

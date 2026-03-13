@@ -564,6 +564,44 @@ function loadCustomLevels() {
   loadCustomLevelsFromServer();
 }
 
+// en_US: Find game level index for a given levelId (built-in 0..55 or custom 57+)
+// zh_TW: 依 levelId 取得遊戲關卡索引（內建 0..55 或自訂 57+）
+function findLevelIndexByLevelId(levelId) {
+  const id = parseInt(levelId, 10);
+  if (isNaN(id) || id < 0) return null;
+  if (id < levels.length) return id;
+  const i = customLevels.findIndex((l) => l.levelId === id);
+  if (i >= 0) return levels.length + i;
+  return null;
+}
+
+// en_US: Ensure level by ID is in list (fetch from API if custom and not in customLevels)
+// zh_TW: 確保關卡在列表中（若為自訂且不在列表中則向 API 取得）
+async function ensureLevelById(levelId) {
+  const idx = findLevelIndexByLevelId(levelId);
+  if (idx !== null) return idx;
+  const base = getBaseUrl();
+  try {
+    const res = await fetch(`${base}/api/levels/${levelId}`);
+    if (!res.ok) return null;
+    const data = await res.json().catch(() => null);
+    if (!data || !data.levelData) return null;
+    if (data.isCustom) {
+      customLevels.push({
+        levelData: data.levelData,
+        levelId: data.levelId,
+        creatorName: data.creatorName || null,
+        createdAt: data.createdAt || null,
+        solutionSteps: data.solutionSteps,
+      });
+      return levels.length + customLevels.length - 1;
+    }
+    return data.levelId;
+  } catch {
+    return null;
+  }
+}
+
 function setConnectionStatus(ok) {
   if (connIcon) {
     connIcon.classList.toggle('connected', ok);
@@ -966,16 +1004,28 @@ function initGame() {
   });
 
   loadCustomLevels();
-  if (getAllLevels().length) loadLevel(0);
   initEditor();
   scheduleBoardLayout();
-  
-  fetchLevels().then((ok) => {
-    setConnectionStatus(ok);
-    if (ok && levels.length && state === null) {
-      loadLevel(0);
+
+  // en_US: Load levels from server, then open level from URL if /singleplayer/:levelId
+  // zh_TW: 從伺服器載入關卡後，若網址為 /singleplayer/:levelId 則開啟該關
+  (async () => {
+    const okLevels = await fetchLevels();
+    await loadCustomLevelsFromServer();
+    setConnectionStatus(okLevels);
+    const all = getAllLevels();
+    if (all.length === 0) return;
+    let idx = 0;
+    const m = window.location.pathname.match(/^\/singleplayer\/(\d+)\/?$/);
+    if (m) {
+      const urlLevelId = parseInt(m[1], 10);
+      let found = findLevelIndexByLevelId(urlLevelId);
+      if (found === null) found = await ensureLevelById(urlLevelId);
+      if (found !== null) idx = found;
+      else await showError('關卡不存在', 'Level not found / 此關卡不存在');
     }
-  });
+    loadLevel(idx);
+  })();
 }
 
 if (document.readyState === 'loading') {

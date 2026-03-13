@@ -83,7 +83,9 @@ function getMtime(path) {
   }
 }
 
-app.get('/', (req, res) => {
+// en_US: Serve index.html for SPA (root and singleplayer level deep links)
+// zh_TW: 供 SPA 使用（首頁與單人關卡直連）
+function sendIndexHtml(req, res) {
   let html = readFileSync(join(clientDir, 'index.html'), 'utf8');
   const cssTs = getMtime('css/style.css');
   const jsTs = getMtime('js/game.js');
@@ -91,7 +93,10 @@ app.get('/', (req, res) => {
   html = html.replace(/src="js\/game\.js"(?:\?[^"]*)?/i, `src="js/game.js?t=${jsTs}"`);
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.send(html);
-});
+}
+
+app.get('/', sendIndexHtml);
+app.get('/singleplayer/:levelId', sendIndexHtml);
 const httpServer = createServer(app);
 const io = new Server(httpServer, { cors: { origin: '*' } });
 

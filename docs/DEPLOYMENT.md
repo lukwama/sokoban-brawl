@@ -106,6 +106,7 @@ sudo ufw enable
 - UI: https://sokoban.lukwama.com/
 - Health: https://sokoban.lukwama.com/health
 - Leaderboard: https://sokoban.lukwama.com/api/leaderboard/0
+- Custom level direct link: https://sokoban.lukwama.com/singleplayer/57 (if level 57 exists; no extra Nginx config needed—Node serves the SPA for `/singleplayer/:levelId`).
 
 Set client “Server URL” to `https://sokoban.lukwama.com` (no trailing slash).
 
@@ -212,6 +213,7 @@ sudo ufw enable
 - 單人／驗證介面：https://sokoban.lukwama.com/
 - 健康檢查：https://sokoban.lukwama.com/health
 - 排行榜：https://sokoban.lukwama.com/api/leaderboard/0
+- 自訂關卡直連：https://sokoban.lukwama.com/singleplayer/57（若關卡 57 存在即可開啟；無需額外 Nginx 設定，Node 會對 `/singleplayer/:levelId` 回傳 SPA。）
 
 客戶端「伺服器網址」欄位可設為 `https://sokoban.lukwama.com`（無尾端斜線）以連到正式環境。
 
