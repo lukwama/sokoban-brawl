@@ -78,6 +78,8 @@ let moveHistory = [];
 let positionHistory = [];
 let steps = 0;
 let playbackTimer = null;
+/** Blocks user input (keyboard, swipe, buttons) during replay playback. / 回放期間阻擋使用者操控 */
+let isPlayingBack = false;
 let lbLevelIndex = 0;
 let controlMode = 'buttons';
 let swipeStart = null;
@@ -309,6 +311,7 @@ function syncLbLevel() {
 
 function doMove(key, recordMove = true) {
   if (!state) return;
+  if (recordMove && isPlayingBack) return;
   const next = tryMove(state, key, recordMove);
   if (!next) return;
   if (recordMove) {
@@ -334,7 +337,7 @@ function doMove(key, recordMove = true) {
 }
 
 function undo() {
-  if (positionHistory.length === 0) return;
+  if (isPlayingBack || positionHistory.length === 0) return;
   const prev = positionHistory.pop();
   state = { ...state, player: prev.player, boxes: prev.boxes };
   moveHistory.pop();
@@ -353,11 +356,13 @@ function stopPlayback() {
     clearInterval(playbackTimer);
     playbackTimer = null;
   }
+  isPlayingBack = false;
 }
 
 function startPlayback(movesStr) {
   stopPlayback();
   if (!movesStr || !state) return;
+  isPlayingBack = true;
   const keys = movesStr.trim().toLowerCase().split('');
   let i = 0;
   playbackTimer = setInterval(() => {
