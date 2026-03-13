@@ -270,6 +270,20 @@ body {
   border-radius: 8px;
 }
 
+/* en_US: Pulsing border during replay playback; indicates user input is locked.
+   zh_TW: 回放期間的脈衝邊框，表示使用者輸入已鎖定。 */
+@keyframes playbackPulse {
+  0%   { box-shadow: 0 0 6px var(--accent); }
+  50%  { box-shadow: 0 0 18px var(--accent); }
+  100% { box-shadow: 0 0 6px var(--accent); }
+}
+
+.game-board.playback-active {
+  animation: playbackPulse 1.2s infinite ease-in-out;
+  border-radius: 8px;
+  pointer-events: none;
+}
+
 .cell {
   width: var(--cell-size, var(--cell));
   height: var(--cell-size, var(--cell));

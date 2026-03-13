@@ -278,6 +278,7 @@ function renderBoard() {
 }
 
 function loadLevel(idx) {
+  stopPlayback();
   const all = getAllLevels();
   if (idx < 0 || idx >= all.length) return;
   levelIndex = idx;
@@ -307,8 +308,13 @@ function syncLbLevel() {
   if (lbNextLevel) lbNextLevel.disabled = lbLevelIndex >= levels.length - 1;
 }
 
+function isPlaybackActive() {
+  return playbackTimer !== null;
+}
+
 function doMove(key, recordMove = true) {
   if (!state) return;
+  if (recordMove && isPlaybackActive()) return;
   const next = tryMove(state, key, recordMove);
   if (!next) return;
   if (recordMove) {
@@ -334,6 +340,7 @@ function doMove(key, recordMove = true) {
 }
 
 function undo() {
+  if (isPlaybackActive()) return;
   if (positionHistory.length === 0) return;
   const prev = positionHistory.pop();
   state = { ...state, player: prev.player, boxes: prev.boxes };
@@ -353,11 +360,13 @@ function stopPlayback() {
     clearInterval(playbackTimer);
     playbackTimer = null;
   }
+  if (boardEl) boardEl.classList.remove('playback-active');
 }
 
 function startPlayback(movesStr) {
   stopPlayback();
   if (!movesStr || !state) return;
+  if (boardEl) boardEl.classList.add('playback-active');
   const keys = movesStr.trim().toLowerCase().split('');
   let i = 0;
   playbackTimer = setInterval(() => {
@@ -648,6 +657,11 @@ function initGame() {
   document.addEventListener('keydown', (e) => {
     const panel = document.querySelector('.tab-panel.active');
     if (!panel || panel.id !== 'panelGame') return;
+    if (e.code === 'Escape' && isPlaybackActive()) {
+      e.preventDefault();
+      stopPlayback();
+      return;
+    }
     if (winOverlay && winOverlay.classList.contains('visible')) return;
     const map = { ArrowLeft: 'l', ArrowRight: 'r', ArrowUp: 'u', ArrowDown: 'd', KeyA: 'l', KeyD: 'r', KeyW: 'u', KeyS: 'd' };
     const key = map[e.code];
