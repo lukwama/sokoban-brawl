@@ -57,6 +57,14 @@ curl -X POST http://localhost:3000/api/leaderboard/0 -H "Content-Type: applicati
 
 For a fresh **Ubuntu 24.04** server: [docs/SERVER-SETUP.md](docs/SERVER-SETUP.md) (SSH protection, swap, fail2ban, clone). For production (e.g. https://sokoban.lukwama.com): [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
+#### 📚 Auto-Deployment
+
+Set up GitHub webhook for automatic deployment:
+- **[Quick Start (5 min)](docs/AUTO-DEPLOY-QUICKSTART.md)** - Fast setup guide
+- **[Full Guide](docs/AUTO-DEPLOY.md)** - Detailed configuration and troubleshooting
+- **[Remote Agent Prompt](docs/REMOTE-AGENT-DEPLOY-PROMPT.md)** - For Cursor AI Agent
+- **[Path Detection](docs/PATH-DETECTION-EXPLAINED.md)** - How auto-detection works
+
 ---
 
 ### zh_TW（繁體中文）
@@ -115,3 +123,11 @@ curl -X POST http://localhost:3000/api/leaderboard/0 -H "Content-Type: applicati
 #### 🖥 伺服器設定
 
 全新 **Ubuntu 24.04** 可依 [docs/SERVER-SETUP.md](docs/SERVER-SETUP.md) 進行 SSH 資源保護、swap、fail2ban 與專案拉取。正式環境（例：https://sokoban.lukwama.com）請參考 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)。
+
+#### 📚 自動部署
+
+設定 GitHub webhook 以自動部署：
+- **[快速入門（5 分鐘）](docs/AUTO-DEPLOY-QUICKSTART.md)** - 快速設置指南
+- **[完整指南](docs/AUTO-DEPLOY.md)** - 詳細配置與故障排除
+- **[遠端 Agent 指令](docs/REMOTE-AGENT-DEPLOY-PROMPT.md)** - 給 Cursor AI Agent 使用
+- **[路徑偵測說明](docs/PATH-DETECTION-EXPLAINED.md)** - 自動偵測運作原理
