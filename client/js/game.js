@@ -69,7 +69,10 @@ function checkWin(boxes, targets) {
 let levels = ["?#####?\n#     #\n# # # #\n# $@$ #\n# ### #\n#.   .#\n?#####?", "??###???\n??#.#???\n??# ####\n###$ $.#\n#. $@###\n####$#??\n???#.#??\n???###??", "?######\n## .  #\n#  $$.#\n#.$@$.#\n#.$$  #\n#  . ##\n######?", "####???\n#..####\n#..$  #\n#   $ #\n##$$  #\n?#   @#\n?######", "?####?\n##  #?\n#@$ #?\n##$ ##\n## $ #\n#.$  #\n#..*.#\n######", "?####???\n?#@ ###?\n?# $  #?\n### # ##\n#.# #  #\n#.$  # #\n#.   $ #\n########", "??######\n??#    #\n###$$$ #\n#@ $.. #\n# $...##\n####  #?\n???####?", "??#####?\n###  @#?\n#  $. ##\n#  .$. #\n### *$ #\n? #   ##\n??#####?", "??####??\n??#..#??\n?## .##?\n?#  $.#?\n## $  ##\n#  #$$ #\n#   @  #\n########", "########\n#  #   #\n# $..$ #\n#@$.* ##\n# $..$ #\n#  #   #\n########", "?######?\n?#. ..#?\n?#. $.#?\n###  $##\n# $  $ #\n# #$## #\n#   @  #\n########", "?######\n## . @#\n# $ $ #\n#. * .#\n# $ $ #\n#  . ##\n######?", "#######\n#..$..#\n#..#..#\n# $$$ #\n#  $  #\n# $$$ #\n#  #@ #\n#######", "#####????\n#@  #????\n# $$#?###\n# $ #?#.#\n### ###.#\n?##    .#\n?#   #  #\n?#   ####\n?#####???", "??#####?\n###   #?\n#.#@# #?\n#.# $ #?\n#.  ####\n#  $   #\n#  # $ #\n####   #\n???#####", "?####??\n?#  ###\n## $  #\n#   $ #\n# #   #\n# #$###\n# #@..#\n# $ ..#\n###  ##\n??####?", "???####\n???#  #\n??##$ #\n###.. #\n# $.. #\n# $# @#\n# $   #\n#   ###\n#####??", "??####??\n??#  #??\n??# $#??\n###  ###\n#  *.$ #\n#  ..  #\n### $###\n??# @#??\n??####??", "######??\n#@   ###\n#  $   #\n### ## #\n#  $# .#\n#   $$.#\n## $  .#\n?#####.#\n?????#.#\n?????###", "??###??\n###@###\n#     #\n# # $ #\n# #$ ##\n# $ $#?\n## $ #?\n?#...#?\n?##..#?\n??####?", "######\n#  ..#\n# $$.#\n# #..#\n# $ ##\n# # #?\n#  $##\n#  $@#\n##   #\n?#####", "????###?\n#####.##\n# $ $ .#\n#@$ #.##\n# $ .$.#\n#### .##\n???# $ #\n???#   #\n???#####", "?######\n?#  ..#\n?# $*.#\n## $..#\n# $ #@#\n# # $ #\n#  $# #\n###   #\n??#####", "#########\n# ..#   #\n#..* $ @#\n##.##  ##\n# $ $  #?\n#  $#$##?\n#   #  #?\n###    #?\n??###  #?\n????####?", "?########\n?#   #  #\n## #  $ #\n#  # $ @#\n#   $## #\n# $$ $  #\n#   ..###\n####..#??\n???#..#??\n???####??", "??#####?\n??#   #?\n###$$ ##\n# $ #  #\n#..$ #@#\n#..#   #\n#..$$ ##\n#.# $ #?\n###   #?\n??#####?", "?#####??\n?# @ #??\n?#$$$###\n##.#.#.#\n#.$  $ #\n# .#.#.#\n#  $ $ #\n##     #\n?#######", "########?\n#      #?\n# #$$  #?\n# ...# #?\n##...$ ##\n?# ## $ #\n?#$  $  #\n?#  #  @#\n?########", "?####???\n?# @#???\n?#  ####\n##$$#..#\n#   #..#\n# $ $ .#\n#   $ .#\n## $####\n?#  #???\n?####???", "??######?\n??#   .#?\n### $ ##?\n#.#@$ #??\n# ###.###\n# ..#$  #\n# $$ .$.#\n## $  ###\n?#    #??\n?######??", "#########\n#   # ..#\n#   # *.#\n# $  $..#\n# #$## ##\n#$# #  ##\n# $   $ #\n# # ##@ #\n#.  #####\n#####????", "??#####\n###   #\n#. $$ #\n#.#   #\n#. #$@#\n#.$   #\n#. $$ #\n#.  ###\n#####??", "######??\n#@ . ###\n#  #   #\n# $# # #\n#.$.$. #\n##$# $##\n?# #  #?\n?# .  #?\n?######?", "?????####\n######  #\n#    #$ #\n#   $   #\n###$##$ #\n###@##..#\n#  $ ...#\n# $  #.##\n###  ###?\n??####???", "?####??\n?#  ###\n## @  #\n# $.$ #\n#$.$.$#\n#.$.$.#\n# .$. #\n#  *  #\n#######", "#####?\n#   ##\n#  $ #\n# $ @#\n###. #\n??#.##\n??#. #\n###. #\n#  $ #\n# $  #\n##  ##\n?####?", "??####???\n??#  #???\n??# @#???\n??#  #???\n###$#####\n# $ #   #\n# ..$.. #\n# $ #   #\n### # ###\n??#   #??\n??#####??", "####???\n#  ####\n#  $  #\n# #.# #\n# # # #\n#.$.$.#\n# # # #\n# #.# #\n#  $$ #\n##  @ #\n?#  ###\n?####??", "?????####?\n?????#  #?\n######  #?\n#  ## $ #?\n#  ##..##?\n# ..$$.###\n## .$... #\n?#    $$ #\n?#$$$##  #\n?#  @#####\n?#####????", "???#######\n?###     #\n##   # # #\n#  #.$$$ #\n# #.*# ###\n#  ..# # ?\n###..$ ##?\n??#.# $ #?\n?## # #@#?\n?# $  $ #?\n?#     ##?\n?#######??", "?????####\n######  #\n#  $  $@#\n#   ##  #\n#  #.. ##\n##$#..$ #\n## #..  #\n#   ##  #\n#  $  $ #\n######  #\n?????####", "#########?\n#   #   #?\n# #   $ #?\n# # ##$ #?\n#....$  #?\n##.. #  #?\n?##$## ###\n?#     $ #\n?#   #$# #\n?#####  @#\n?????#####", "?#####\n?# @ #\n?#$$$#\n?# $ #\n?#...#\n##...#\n#    #\n# $$ #\n#  ###\n####??", "####???\n#  ###?\n#...@#?\n# $# #?\n#  #$##\n# $#  #\n#  #$ #\n##$...#\n?#  $ #\n?#    #\n?######", "??????####\n????### @#\n#####    #\n# $ ..#$ #\n#  #..$  #\n# $#  #$ #\n#  $..#  #\n# $#.. $ #\n#    #####\n#  ###????\n####??????", "######??\n# @  #??\n#  $ #??\n# $ ####\n## $#. #\n?#$ #..#\n##  $..#\n#  $ ..#\n#  $####\n#   #???\n#####???", "???####???\n?###  #???\n?#    ##??\n##$#   #??\n#  #$# ###\n# $ .*.  #\n# @###.# #\n## #...$ #\n?#  $#$###\n?##    #??\n??######??", "?#####????\n?#   #????\n?#  $#####\n?#   #   #\n?#*#$# # #\n##.. $   #\n# ..##$###\n#@#.#  #??\n#   $  #??\n#####  #??\n????####??", "?####?????\n?#  #?????\n?#$ ###???\n?#   @#???\n## #. ####\n#  #*.$  #\n# $$..#  #\n## ##.   #\n?# $  ####\n?#  ###???\n?#  #?????\n?####?????", "?#####?\n?#   #?\n?# $ #?\n?#   ##\n?# #$ #\n## .* #\n# ..# #\n# #.. #\n# $ $##\n###$ #?\n??# @#?\n??####?", "#####?????\n#   #?????\n# $ #?????\n# $ ######\n# $ #  . #\n##$    . #\n# $ #....#\n# @ ######\n# $ #?????\n#   #?????\n#####?????", "?????####\n######  #\n#     ..#\n# $$ #..#\n# $  #..#\n##$$@#..#\n# $  #..#\n# $$  # #\n#   $$  #\n####   ##\n???#####?", "?????####\n?????#  #\n????##  #\n#####.$ #\n#  $.$. #\n#@$.$.$.#\n#  $.$. #\n#####.$ #\n????#   #\n????##  #\n?????####", "#####?????\n#   #?????\n#@$$#####?\n##  # $.##\n##    .$ #\n#   #.$. #\n#  #.$.$ #\n###.$.$. #\n??###   ##\n????#####", "???####?\n####  #?\n# . . ##\n# #$$  #\n# @$.# #\n### *  #\n??#  ###\n??####??", "?########??\n?#      ##?\n?# $ $ $ #?\n## *   * ##\n# **#$#** #\n#...   ...#\n# *#$#$#* #\n#    @    #\n###########"];
 let customLevels = [];
 function getAllLevels() {
-  return [...levels, ...customLevels];
+  const customLevelStrings = customLevels.map(level => 
+    typeof level === 'string' ? level : level.levelData
+  );
+  return [...levels, ...customLevelStrings];
 }
 
 let levelIndex = 0;
@@ -83,6 +86,7 @@ let lbLevelIndex = 0;
 let controlMode = 'buttons';
 let swipeStart = null;
 let isLevelTransitioning = false;
+let pendingCustomLevelUpload = null;
 
 const boardEl = document.getElementById('gameBoard');
 const stepsEl = document.getElementById('gameSteps');
@@ -280,10 +284,31 @@ function renderBoard() {
   if (levelNumEl) levelNumEl.textContent = levelIndex + 1;
   const badgeEl = document.getElementById('levelBadge');
   if (badgeEl) {
-    // 總共 59 個內建關卡 (0~58)，最後三個為 56, 57, 58
-    // 或者 levelIndex 大於等於 59 也是玩家自己設計的關卡
-    const isCustom = levelIndex >= levels.length - 3;
+    // en_US: Only levels beyond built-in 56 levels (index >= 56) are custom
+    // zh_TW: 只有超過內建 56 關（index >= 56）的才是玩家自訂關卡
+    const isCustom = levelIndex >= levels.length;
     badgeEl.hidden = !isCustom;
+    
+    if (isCustom && customLevels.length > 0) {
+      const customIndex = levelIndex - levels.length;
+      const customLevel = customLevels[customIndex];
+      
+      if (customLevel && customLevel.creatorName) {
+        const timestamp = new Date(customLevel.createdAt);
+        const dateStr = timestamp.toLocaleString('zh-TW', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        });
+        badgeEl.textContent = `by ${customLevel.creatorName} ${dateStr}`;
+      } else {
+        badgeEl.textContent = '玩家自訂';
+      }
+    }
   }
   updateGameplayControlState();
   scheduleBoardLayout();
@@ -333,17 +358,24 @@ function doMove(key, recordMove = true) {
   renderBoard();
   if (recordMove && !isLevelTransitioning && checkWin(state.boxes, state.targets)) {
     isLevelTransitioning = true;
-    submitScore(); // Auto submit score
-    boardEl.classList.add('win-glow');
-    setTimeout(() => {
-      const area = document.querySelector('.game-area');
-      if (area) area.classList.add('fade-out');
+    
+    // en_US: Check if this is a custom level being tested for upload
+    // zh_TW: 檢查這是否為正在測試上傳的自訂關卡
+    if (pendingCustomLevelUpload) {
+      handleCustomLevelCompletion();
+    } else {
+      submitScore(); // Auto submit score
+      boardEl.classList.add('win-glow');
       setTimeout(() => {
-        loadLevel(levelIndex + 1);
-        if (area) area.classList.remove('fade-out');
-        boardEl.classList.remove('win-glow');
-      }, 500);
-    }, 1500);
+        const area = document.querySelector('.game-area');
+        if (area) area.classList.add('fade-out');
+        setTimeout(() => {
+          loadLevel(levelIndex + 1);
+          if (area) area.classList.remove('fade-out');
+          boardEl.classList.remove('win-glow');
+        }, 500);
+      }, 1500);
+    }
   }
 }
 
@@ -432,19 +464,128 @@ async function fetchLevels() {
   return false;
 }
 
-function loadCustomLevels() {
+async function loadCustomLevelsFromServer() {
+  try {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/custom-levels`);
+    const data = await res.json().catch(() => ({ customLevels: [] }));
+    
+    if (res.ok && Array.isArray(data.customLevels)) {
+      customLevels = data.customLevels.map(level => ({
+        levelData: level.levelData,
+        levelId: level.levelId,
+        creatorName: level.creatorName,
+        createdAt: level.createdAt,
+        solutionSteps: level.solutionSteps
+      }));
+      return true;
+    }
+  } catch {
+    // Fallback to localStorage if server fails
+  }
+  
+  // Fallback: load from localStorage
   try {
     const raw = localStorage.getItem(STORAGE_CUSTOM);
-    customLevels = raw ? JSON.parse(raw) : [];
-  } catch (_) {
+    const localLevels = raw ? JSON.parse(raw) : [];
+    customLevels = localLevels.map(levelStr => ({
+      levelData: levelStr,
+      levelId: null,
+      creatorName: null,
+      createdAt: null
+    }));
+  } catch {
     customLevels = [];
   }
+  
+  return false;
+}
+
+function loadCustomLevels() {
+  loadCustomLevelsFromServer();
 }
 
 function setConnectionStatus(ok) {
   if (connIcon) {
     connIcon.classList.toggle('connected', ok);
     connIcon.setAttribute('aria-label', ok ? 'Connected' : 'Disconnected');
+  }
+}
+
+async function handleCustomLevelCompletion() {
+  // en_US: Player completed their custom level, prompt to upload
+  // zh_TW: 玩家完成了自訂關卡，提示上傳
+  
+  boardEl.classList.add('win-glow');
+  
+  setTimeout(async () => {
+    const playerName = (document.getElementById('playerName') && document.getElementById('playerName').value.trim()) || 'Player';
+    const moves = getMovesString();
+    
+    // Check player name
+    const defaultNames = ['Player', 'player', '匿名', '玩家', 'Anonymous'];
+    if (defaultNames.includes(playerName)) {
+      alert('請先在設定中設定您的玩家名稱（不可使用預設名稱 Player）\nPlease set your player name in settings (cannot use default name "Player")');
+      showTab('settings');
+      pendingCustomLevelUpload = null;
+      customLevels = [];
+      isLevelTransitioning = false;
+      boardEl.classList.remove('win-glow');
+      return;
+    }
+    
+    const confirmed = confirm(`恭喜通關！\n\n是否要將此關卡上傳到伺服器？\n上傳者：${playerName}\n步數：${steps}\n\nCongratulations!\n\nUpload this level to the server?\nCreator: ${playerName}\nSteps: ${steps}`);
+    
+    if (confirmed) {
+      await uploadCustomLevel(pendingCustomLevelUpload.levelData, playerName, moves);
+    }
+    
+    pendingCustomLevelUpload = null;
+    customLevels = [];
+    
+    const area = document.querySelector('.game-area');
+    if (area) area.classList.add('fade-out');
+    setTimeout(() => {
+      loadLevel(0);
+      if (area) area.classList.remove('fade-out');
+      boardEl.classList.remove('win-glow');
+      isLevelTransitioning = false;
+    }, 500);
+  }, 1500);
+}
+
+async function uploadCustomLevel(levelData, creatorName, solutionMoves) {
+  const base = getBaseUrl();
+  setConnectionStatus(false);
+  
+  try {
+    const res = await fetch(`${base}/api/custom-levels`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        levelData,
+        creatorName,
+        solutionMoves
+      })
+    });
+    
+    const data = await res.json().catch(() => ({}));
+    
+    if (res.ok && data.success) {
+      setBaseUrl(base);
+      setConnectionStatus(true);
+      alert(`關卡上傳成功！\n\n關卡 ID: ${data.levelId}\n網址: ${data.levelUrl}\n\nLevel uploaded successfully!\n\nLevel ID: ${data.levelId}\nURL: ${data.levelUrl}`);
+      
+      // Reload custom levels
+      await loadCustomLevelsFromServer();
+    } else {
+      setConnectionStatus(false);
+      const errorMsg = data.message || data.error || 'Unknown error';
+      alert(`上傳失敗：${errorMsg}\n\nUpload failed: ${errorMsg}`);
+    }
+  } catch (err) {
+    setConnectionStatus(false);
+    alert(`上傳失敗：網路錯誤\n\nUpload failed: Network error`);
   }
 }
 
@@ -628,12 +769,32 @@ function editorSave() {
   const boxCount = parsed.boxes.length;
   const targetCount = parsed.targets.length;
   const playerCount = parsed.player ? 1 : 0;
-  if (boxCount !== targetCount || playerCount !== 1) return;
-  customLevels.push(str);
-  localStorage.setItem(STORAGE_CUSTOM, JSON.stringify(customLevels));
-  levelIndex = getAllLevels().length - 1;
+  
+  if (boxCount !== targetCount) {
+    alert('關卡無效：箱子數量必須等於目標數量\nInvalid level: Box count must equal target count');
+    return;
+  }
+  
+  if (playerCount !== 1) {
+    alert('關卡無效：必須有且僅有一個玩家\nInvalid level: Must have exactly one player');
+    return;
+  }
+  
+  // en_US: Store level for upload after completion
+  // zh_TW: 儲存關卡以便通關後上傳
+  pendingCustomLevelUpload = {
+    levelData: str,
+    timestamp: Date.now()
+  };
+  
+  // en_US: Load level for testing
+  // zh_TW: 載入關卡進行測試
+  customLevels = [str];
+  levelIndex = levels.length;
   loadLevel(levelIndex);
   showTab('game');
+  
+  alert('請先通關此關卡，通關後即可上傳！\nPlease complete this level first, then you can upload it!');
 }
 
 function initEditor() {

@@ -10,7 +10,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { createHmac } from 'crypto';
 import { spawn } from 'child_process';
-import { initDb, getLeaderboard, hasDuplicateMoves, insertRecord } from './db.js';
+import { initDb, getLeaderboard, hasDuplicateMoves, insertRecord, getNextCustomLevelId, isDuplicateLevel, insertCustomLevel, getCustomLevels, getCustomLevelById } from './db.js';
 import { validateSolution } from './core/validator.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -108,12 +108,158 @@ async function start() {
     res.json({ levels });
   });
 
+  // en_US: Get custom levels
+  // zh_TW: 取得自訂關卡列表
+  app.get('/api/custom-levels', (req, res) => {
+    const customLevels = getCustomLevels();
+    res.json({ customLevels });
+  });
+
+  // en_US: Get level by ID (built-in or custom)
+  // zh_TW: 依 ID 取得關卡（內建或自訂）
+  app.get('/api/levels/:levelId', (req, res) => {
+    const { levelId } = req.params;
+    const levelIndex = parseInt(levelId, 10);
+    
+    if (isNaN(levelIndex) || levelIndex < 0) {
+      return res.status(400).json({ error: 'invalid_level_id' });
+    }
+    
+    // Built-in levels (0-55)
+    if (levelIndex < levels.length) {
+      return res.json({
+        levelId: levelIndex,
+        levelData: levels[levelIndex],
+        isCustom: false
+      });
+    }
+    
+    // Custom levels (57+)
+    const customLevel = getCustomLevelById(levelIndex);
+    if (customLevel) {
+      return res.json({
+        levelId: customLevel.levelId,
+        levelData: customLevel.levelData,
+        creatorName: customLevel.creatorName,
+        createdAt: customLevel.createdAt,
+        isCustom: true
+      });
+    }
+    
+    return res.status(404).json({ error: 'level_not_found' });
+  });
+
+  // en_US: Submit custom level (with validation)
+  // zh_TW: 提交自訂關卡（含驗證）
+  app.post('/api/custom-levels', (req, res) => {
+    const { levelData, creatorName, solutionMoves } = req.body || {};
+    
+    // Validate required fields
+    if (!levelData || typeof levelData !== 'string' || !levelData.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: 'level_data_required',
+        message: '關卡內容為必填'
+      });
+    }
+    
+    if (!solutionMoves || typeof solutionMoves !== 'string' || !solutionMoves.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: 'solution_required',
+        message: '必須提供通關步驟'
+      });
+    }
+    
+    const name = (creatorName || '').toString().trim();
+    
+    // en_US: Check player name (cannot be default names)
+    // zh_TW: 檢查玩家名稱（不可為預設名稱）
+    const defaultNames = ['Player', 'player', '匿名', '玩家', '', 'Anonymous'];
+    if (!name || defaultNames.includes(name)) {
+      return res.status(400).json({
+        success: false,
+        error: 'invalid_player_name',
+        message: '請設定玩家名稱（不可使用預設名稱）'
+      });
+    }
+    
+    if (name.length > 32) {
+      return res.status(400).json({
+        success: false,
+        error: 'name_too_long',
+        message: '玩家名稱不可超過 32 字元'
+      });
+    }
+    
+    // en_US: Check for duplicate level
+    // zh_TW: 檢查關卡是否重複
+    const duplicateCheck = isDuplicateLevel(levelData);
+    if (duplicateCheck.isDuplicate) {
+      return res.status(400).json({
+        success: false,
+        error: 'duplicate_level',
+        message: `此關卡已存在（關卡 ID: ${duplicateCheck.existingLevelId}）`,
+        existingLevelId: duplicateCheck.existingLevelId
+      });
+    }
+    
+    // en_US: Validate solution (player must complete the level)
+    // zh_TW: 驗證通關（玩家必須先通關才能上傳）
+    const validationResult = validateSolution(levelData, solutionMoves);
+    
+    if (!validationResult.valid) {
+      return res.status(400).json({
+        success: false,
+        error: validationResult.error || 'validation_failed',
+        message: validationResult.error === 'invalid_move' ? '通關步驟無效' :
+          validationResult.error === 'not_completed' ? '未完成過關，請先通關此關卡' : '驗證失敗'
+      });
+    }
+    
+    // en_US: Insert custom level
+    // zh_TW: 插入自訂關卡
+    const { levelId, createdAt } = insertCustomLevel(
+      levelData.trim(),
+      name,
+      solutionMoves.trim(),
+      validationResult.steps
+    );
+    
+    const levelUrl = `${req.protocol}://${req.get('host')}/singleplayer/${levelId}`;
+    
+    res.json({
+      success: true,
+      levelId,
+      levelUrl,
+      createdAt,
+      message: '關卡上傳成功！'
+    });
+  });
+
   app.get('/api/leaderboard/:levelId', (req, res) => {
     const { levelId } = req.params;
     const levelIndex = parseInt(levelId, 10);
-    if (isNaN(levelIndex) || levelIndex < 0 || levelIndex >= levels.length) {
+    
+    if (isNaN(levelIndex) || levelIndex < 0) {
       return res.status(400).json({ error: 'invalid_level_id' });
     }
+    
+    // en_US: Check if level exists (built-in or custom)
+    // zh_TW: 檢查關卡是否存在（內建或自訂）
+    let levelExists = false;
+    
+    if (levelIndex < levels.length) {
+      levelExists = true;
+    } else if (levelIndex >= 57) {
+      const customLevel = getCustomLevelById(levelIndex);
+      levelExists = customLevel !== null;
+    }
+    
+    if (!levelExists) {
+      return res.status(400).json({ error: 'invalid_level_id' });
+    }
+    
     const records = getLeaderboard(levelId);
     res.json({ levelId, records });
   });
@@ -123,7 +269,23 @@ async function start() {
     const { steps, moves, playerName } = req.body || {};
 
     const levelIndex = parseInt(levelId, 10);
-    if (isNaN(levelIndex) || levelIndex < 0 || levelIndex >= levels.length) {
+    
+    // en_US: Check both built-in levels and custom levels
+    // zh_TW: 檢查內建關卡和自訂關卡
+    let levelString = null;
+    
+    if (levelIndex >= 0 && levelIndex < levels.length) {
+      // Built-in level (1-56)
+      levelString = levels[levelIndex];
+    } else if (levelIndex >= 57) {
+      // Custom level
+      const customLevel = getCustomLevelById(levelIndex);
+      if (customLevel) {
+        levelString = customLevel.levelData;
+      }
+    }
+    
+    if (!levelString) {
       return res.status(400).json({ success: false, error: 'invalid_level_id' });
     }
 
@@ -138,7 +300,6 @@ async function start() {
       return res.status(400).json({ success: false, error: 'invalid_steps' });
     }
 
-    const levelString = levels[levelIndex];
     const result = validateSolution(levelString, movesStr);
 
     if (!result.valid) {
