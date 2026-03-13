@@ -82,6 +82,7 @@ let isPlaybackActive = false;
 let lbLevelIndex = 0;
 let controlMode = 'buttons';
 let swipeStart = null;
+let isLevelTransitioning = false;
 
 const boardEl = document.getElementById('gameBoard');
 const stepsEl = document.getElementById('gameSteps');
@@ -299,6 +300,7 @@ function loadLevel(idx) {
   moveHistory = [];
   positionHistory = [];
   steps = 0;
+  isLevelTransitioning = false;
   renderBoard();
   if (winOverlay) {
     winOverlay.classList.remove('visible');
@@ -329,7 +331,8 @@ function doMove(key, recordMove = true) {
   }
   state = next;
   renderBoard();
-  if (recordMove && checkWin(state.boxes, state.targets)) {
+  if (recordMove && !isLevelTransitioning && checkWin(state.boxes, state.targets)) {
+    isLevelTransitioning = true;
     submitScore(); // Auto submit score
     boardEl.classList.add('win-glow');
     setTimeout(() => {
