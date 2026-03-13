@@ -78,6 +78,7 @@ let moveHistory = [];
 let positionHistory = [];
 let steps = 0;
 let playbackTimer = null;
+let playbackResetTimer = null;
 let lbLevelIndex = 0;
 let controlMode = 'buttons';
 let swipeStart = null;
@@ -189,6 +190,7 @@ function bindControlModeButtons() {
 }
 
 function handleSwipeMove(dx, dy) {
+  if (isPlaybackActive()) return;
   if (Math.abs(dx) < 24 && Math.abs(dy) < 24) return;
   if (Math.abs(dx) > Math.abs(dy)) doMove(dx > 0 ? 'r' : 'l');
   else doMove(dy > 0 ? 'd' : 'u');
@@ -360,6 +362,10 @@ function stopPlayback() {
     clearInterval(playbackTimer);
     playbackTimer = null;
   }
+  if (playbackResetTimer) {
+    clearTimeout(playbackResetTimer);
+    playbackResetTimer = null;
+  }
   if (boardEl) boardEl.classList.remove('playback-active');
 }
 
@@ -372,7 +378,7 @@ function startPlayback(movesStr) {
   playbackTimer = setInterval(() => {
     if (i >= keys.length) {
       clearInterval(playbackTimer);
-      setTimeout(() => loadLevel(levelIndex), 1500);
+      playbackResetTimer = setTimeout(() => loadLevel(levelIndex), 1500);
       return;
     }
     doMove(keys[i], false);
@@ -618,9 +624,9 @@ function initGame() {
   [leftBtn, upBtn, downBtn, rightBtn].forEach((btn, i) => {
     if (!btn) return;
     const key = ['l', 'u', 'd', 'r'][i];
-    btn.addEventListener('click', () => doMove(key));
+    btn.addEventListener('click', () => { if (!isPlaybackActive()) doMove(key); });
   });
-  if (btnUndo) btnUndo.addEventListener('click', undo);
+  if (btnUndo) btnUndo.addEventListener('click', () => { if (!isPlaybackActive()) undo(); });
   if (btnPrevLevel) btnPrevLevel.addEventListener('click', () => loadLevel(levelIndex - 1));
   if (btnNextLevel) btnNextLevel.addEventListener('click', () => loadLevel(levelIndex + 1));
   if (btnReset) btnReset.addEventListener('click', () => loadLevel(levelIndex));
@@ -658,9 +664,11 @@ function initGame() {
   document.addEventListener('keydown', (e) => {
     const panel = document.querySelector('.tab-panel.active');
     if (!panel || panel.id !== 'panelGame') return;
-    if (e.code === 'Escape' && isPlaybackActive()) {
-      e.preventDefault();
-      stopPlayback();
+    if (isPlaybackActive()) {
+      if (e.code === 'Escape') {
+        e.preventDefault();
+        stopPlayback();
+      }
       return;
     }
     if (winOverlay && winOverlay.classList.contains('visible')) return;
