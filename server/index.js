@@ -8,6 +8,8 @@ import { Server } from 'socket.io';
 import { readFileSync, statSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { createHmac } from 'crypto';
+import { spawn } from 'child_process';
 import { initDb, getLeaderboard, hasDuplicateMoves, insertRecord } from './db.js';
 import { validateSolution } from './core/validator.js';
 
@@ -23,6 +25,52 @@ app.use((req, res, next) => {
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
+
+// GitHub Webhook endpoint (before express.json() to preserve raw body for signature verification)
+app.post('/webhook/github', express.raw({ type: 'application/json' }), (req, res) => {
+  const signature = req.headers['x-hub-signature-256'];
+  const event = req.headers['x-github-event'];
+  const secret = process.env.WEBHOOK_SECRET;
+
+  if (!secret) {
+    console.warn('[Webhook] WEBHOOK_SECRET not set, skipping signature verification');
+  } else if (!signature) {
+    console.warn('[Webhook] No signature provided');
+    return res.status(401).json({ error: 'No signature' });
+  } else {
+    const hmac = createHmac('sha256', secret);
+    const digest = 'sha256=' + hmac.update(req.body).digest('hex');
+    if (signature !== digest) {
+      console.warn('[Webhook] Invalid signature');
+      return res.status(401).json({ error: 'Invalid signature' });
+    }
+  }
+
+  if (event !== 'push') {
+    console.log(`[Webhook] Ignored event: ${event}`);
+    return res.json({ message: 'Event ignored' });
+  }
+
+  const payload = JSON.parse(req.body.toString());
+  const branch = payload.ref?.replace('refs/heads/', '');
+  const targetBranch = process.env.DEPLOY_BRANCH || 'main';
+
+  if (branch !== targetBranch) {
+    console.log(`[Webhook] Ignored push to branch: ${branch} (target: ${targetBranch})`);
+    return res.json({ message: `Branch ${branch} ignored` });
+  }
+
+  console.log(`[Webhook] Push to ${branch} detected, triggering deployment...`);
+  res.json({ message: 'Deployment triggered' });
+
+  const deployScript = join(__dirname, '..', 'scripts', 'deploy.sh');
+  const deploy = spawn('bash', [deployScript], {
+    detached: true,
+    stdio: 'ignore'
+  });
+  deploy.unref();
+});
+
 app.use(express.json());
 app.use(express.static(clientDir)); // 掛載在根目錄，讓 /css 和 /js 可以直接被存取
 app.use('/client', express.static(clientDir)); // 為了相容保留
