@@ -343,17 +343,18 @@ function syncLbLevel() {
 }
 
 function doMove(key, recordMove = true, source = 'unknown') {
+  const locked = isPlayerInputLocked();
   // #region agent log
   emitDebugLog('H2', 'client/js/game.js:doMove:entry', 'doMove called', {
     key,
     recordMove,
     source,
-    locked: isPlayerInputLocked(),
+    locked,
     isPlaybackActive,
     steps,
   });
   // #endregion
-  if (recordMove && isPlayerInputLocked()) {
+  if (locked && source !== 'playback') {
     // #region agent log
     emitDebugLog('H2', 'client/js/game.js:doMove:blocked', 'Blocked move during lock', {
       key,
@@ -713,6 +714,7 @@ function initGame() {
         steps,
       });
       // #endregion
+      if (isPlayerInputLocked()) return;
       doMove(key, true, 'button');
     });
   });
