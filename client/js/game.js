@@ -79,6 +79,7 @@ let positionHistory = [];
 let steps = 0;
 let playbackTimer = null;
 let playbackResetTimer = null;
+let playbackMode = false;
 let lbLevelIndex = 0;
 let controlMode = 'buttons';
 let swipeStart = null;
@@ -311,7 +312,7 @@ function syncLbLevel() {
 }
 
 function isPlaybackActive() {
-  return playbackTimer !== null;
+  return playbackMode || playbackTimer !== null;
 }
 
 function doMove(key, recordMove = true) {
@@ -358,6 +359,7 @@ function getMovesString() {
 }
 
 function stopPlayback() {
+  playbackMode = false;
   if (playbackTimer) {
     clearInterval(playbackTimer);
     playbackTimer = null;
@@ -372,6 +374,7 @@ function stopPlayback() {
 function startPlayback(movesStr) {
   stopPlayback();
   if (!movesStr || !state) return;
+  playbackMode = true;
   if (boardEl) boardEl.classList.add('playback-active');
   const keys = movesStr.trim().toLowerCase().split('');
   let i = 0;
@@ -461,6 +464,8 @@ async function refreshLeaderboard() {
         playBtn.addEventListener('click', () => {
           showTab('game');
           loadLevel(lbLevelIndex);
+          playbackMode = true;
+          if (boardEl) boardEl.classList.add('playback-active');
           setTimeout(() => startPlayback(r.moves || ''), 100);
         });
         tr.innerHTML = `<td>${r.rank}</td><td>${r.playerName || 'Player'}</td><td>${r.steps}</td><td></td>`;
