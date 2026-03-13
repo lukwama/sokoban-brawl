@@ -88,9 +88,12 @@ sudo chown www-data:www-data /var/log/sokoban-brawl-deploy.log
 #### Configure git for the service user
 
 ```bash
+# Get your actual project path
+PROJECT_PATH=$(cd /path/to/your/sokoban-brawl && pwd)
+
 sudo -u www-data git config --global user.name "Auto Deploy"
 sudo -u www-data git config --global user.email "deploy@sokoban.lukwama.com"
-sudo -u www-data git config --global --add safe.directory /opt/sokoban-brawl
+sudo -u www-data git config --global --add safe.directory "$PROJECT_PATH"
 ```
 
 ### 3. Update systemd Service (Load Environment Variables)
@@ -101,7 +104,7 @@ Edit your systemd service file to load the `.env` file:
 sudo nano /etc/systemd/system/sokoban-brawl.service
 ```
 
-Add `EnvironmentFile` directive:
+Add `EnvironmentFile` directive (adjust paths to your project location):
 
 ```ini
 [Unit]
@@ -111,8 +114,8 @@ After=network.target
 [Service]
 Type=simple
 User=www-data
-WorkingDirectory=/opt/sokoban-brawl
-EnvironmentFile=/opt/sokoban-brawl/.env
+WorkingDirectory=/path/to/your/sokoban-brawl
+EnvironmentFile=/path/to/your/sokoban-brawl/.env
 ExecStart=/usr/bin/node server/index.js
 Restart=on-failure
 RestartSec=5
@@ -253,7 +256,7 @@ Edit `scripts/deploy.sh` to add custom steps:
 If deployment fails, manually rollback:
 
 ```bash
-cd /opt/sokoban-brawl
+cd /path/to/your/sokoban-brawl  # Your project directory
 git log --oneline -10  # Find the commit hash to rollback to
 git reset --hard <commit-hash>
 npm ci --omit=dev
