@@ -65,6 +65,62 @@ function showSuccess(title, body) {
   return showAlert(title, body, 'success');
 }
 
+// en_US: Level jump modal — click level number to jump to any level
+// zh_TW: 跳關模態框 — 點擊關卡數字跳到任意關卡
+function showLevelJumpModal() {
+  const all = getAllLevels();
+  const totalLevels = all.length;
+  if (totalLevels === 0) return Promise.resolve(null);
+
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    const current = levelIndex + 1;
+
+    let html = `<div class="modal-card">`;
+    html += `<span class="modal-icon modal-icon-info">⇥</span>`;
+    html += `<div class="modal-title">Jump to Level / 跳關</div>`;
+    html += `<div class="level-jump-body">`;
+    html += `<input type="number" id="jumpLevelInput" class="jump-input" min="1" max="${totalLevels}" value="${current}" />`;
+    html += `<input type="range" id="jumpLevelSlider" class="jump-slider" min="1" max="${totalLevels}" value="${current}" step="1" />`;
+    html += `<div class="jump-range-labels"><span>1</span><span>${totalLevels}</span></div>`;
+    html += `</div>`;
+    html += `<div class="modal-actions">`;
+    html += `<button class="modal-btn" data-action="cancel">Cancel</button>`;
+    html += `<button class="modal-btn modal-btn-primary" data-action="go">Go</button>`;
+    html += `</div></div>`;
+
+    overlay.innerHTML = html;
+    document.body.appendChild(overlay);
+    requestAnimationFrame(() => overlay.classList.add('visible'));
+
+    const input = overlay.querySelector('#jumpLevelInput');
+    const slider = overlay.querySelector('#jumpLevelSlider');
+
+    input.addEventListener('input', () => { slider.value = input.value; });
+    slider.addEventListener('input', () => { input.value = slider.value; });
+
+    function close(value) {
+      overlay.classList.remove('visible');
+      setTimeout(() => overlay.remove(), 200);
+      resolve(value);
+    }
+
+    function tryGo() {
+      const val = parseInt(input.value, 10);
+      if (val >= 1 && val <= totalLevels) close(val - 1);
+    }
+
+    overlay.querySelector('[data-action="cancel"]').addEventListener('click', () => close(null));
+    overlay.querySelector('[data-action="go"]').addEventListener('click', tryGo);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') tryGo(); });
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(null); });
+
+    input.focus();
+    input.select();
+  });
+}
+
 function getBaseUrl() {
   const input = document.getElementById('serverUrl');
   const url = (input && input.value.trim()) || localStorage.getItem(STORAGE_URL) || '';
@@ -87,9 +143,9 @@ function parseLevel(levelString) {
   for (let row = 0; row < R; row++) {
     for (let col = 0; col < rows[row].length; col++) {
       const c = rows[row][col];
-      if (c === '@') player = { row, col };
+      if (c === '@' || c === '%') player = { row, col };
       if (c === '$' || c === '*') boxes.push({ row, col });
-      if (c === '.' || c === '*') targets.push({ row, col });
+      if (c === '.' || c === '*' || c === '%') targets.push({ row, col });
     }
   }
   return { grid: rows, R, C, player, boxes, targets };
@@ -624,7 +680,7 @@ async function handleCustomLevelCompletion() {
       await showError('玩家名稱未設定', '請先在設定中設定您的玩家名稱（不可使用預設名稱 Player）\nPlease set your player name in settings.');
       showTab('settings');
       pendingCustomLevelUpload = null;
-      customLevels = [];
+      await loadCustomLevelsFromServer();
       isLevelTransitioning = false;
       boardEl.classList.remove('win-glow');
       return;
@@ -632,17 +688,30 @@ async function handleCustomLevelCompletion() {
     
     const confirmed = await showConfirm('恭喜通關！', `是否要將此關卡上傳到伺服器？\n上傳者：${playerName}\n步數：${steps}\n\nUpload this level?\nCreator: ${playerName}\nSteps: ${steps}`, 'success');
     
-    if (confirmed) {
-      await uploadCustomLevel(pendingCustomLevelUpload.levelData, playerName, moves);
-    }
+    let navigateToLevelIdx = 0;
     
-    pendingCustomLevelUpload = null;
-    customLevels = [];
+    if (confirmed) {
+      const result = await uploadCustomLevel(pendingCustomLevelUpload.levelData, playerName, moves);
+      pendingCustomLevelUpload = null;
+      
+      if (result && result.levelId) {
+        // en_US: Reload custom levels and navigate to the newly uploaded one
+        // zh_TW: 重新載入自訂關卡並導航到新上傳的關卡
+        await loadCustomLevelsFromServer();
+        const newIdx = findLevelIndexByLevelId(result.levelId);
+        if (newIdx !== null) navigateToLevelIdx = newIdx;
+      } else {
+        await loadCustomLevelsFromServer();
+      }
+    } else {
+      pendingCustomLevelUpload = null;
+      await loadCustomLevelsFromServer();
+    }
     
     const area = document.querySelector('.game-area');
     if (area) area.classList.add('fade-out');
     setTimeout(() => {
-      loadLevel(0);
+      loadLevel(navigateToLevelIdx);
       if (area) area.classList.remove('fade-out');
       boardEl.classList.remove('win-glow');
       isLevelTransitioning = false;
@@ -671,15 +740,17 @@ async function uploadCustomLevel(levelData, creatorName, solutionMoves) {
       setBaseUrl(base);
       setConnectionStatus(true);
       await showSuccess('上傳成功！', `關卡 ID: ${data.levelId}\n網址: ${data.levelUrl}\n\nLevel ID: ${data.levelId}\nURL: ${data.levelUrl}`);
-      await loadCustomLevelsFromServer();
+      return { levelId: data.levelId, levelUrl: data.levelUrl };
     } else {
       setConnectionStatus(false);
       const errorMsg = data.message || data.error || 'Unknown error';
       await showError('上傳失敗', `${errorMsg}\nUpload failed: ${errorMsg}`);
+      return null;
     }
   } catch (err) {
     setConnectionStatus(false);
     await showError('上傳失敗', '網路錯誤\nUpload failed: Network error');
+    return null;
   }
 }
 
@@ -811,10 +882,10 @@ function editorRender() {
       else if (ch === '#') cell.classList.add('wall');
       else {
         cell.classList.add('empty');
-        if (ch === '.' || ch === '*') cell.classList.add('target');
+        if (ch === '.' || ch === '*' || ch === '%') cell.classList.add('target');
       }
       if (ch === '$' || ch === '*') cell.classList.add('box');
-      if (ch === '@') cell.classList.add('player');
+      if (ch === '@' || ch === '%') cell.classList.add('player');
 
       cell.addEventListener('click', () => {
         editorGrid[r] = editorGrid[r] || [];
@@ -833,8 +904,8 @@ function editorUpdateStats() {
     for (let c = 0; c < editorW; c++) {
       const ch = editorGrid[r]?.[c] ?? ' ';
       if (ch === '$' || ch === '*') box++;
-      if (ch === '.' || ch === '*') target++;
-      if (ch === '@') player++;
+      if (ch === '.' || ch === '*' || ch === '%') target++;
+      if (ch === '@' || ch === '%') player++;
     }
   }
   const el = document.getElementById('editorStats');
@@ -867,8 +938,8 @@ async function editorSave() {
     for (let c = 0; c < editorW; c++) {
       const ch = editorGrid[r]?.[c] ?? ' ';
       if (ch === '$' || ch === '*') boxCount++;
-      if (ch === '.' || ch === '*') targetCount++;
-      if (ch === '@') playerCount++;
+      if (ch === '.' || ch === '*' || ch === '%') targetCount++;
+      if (ch === '@' || ch === '%') playerCount++;
     }
   }
 
@@ -953,6 +1024,13 @@ function initGame() {
     if (!canAcceptPlayerInput()) return;
     loadLevel(levelIndex);
   });
+  if (levelNumEl) {
+    levelNumEl.addEventListener('click', async () => {
+      if (isPlaybackActive) return;
+      const idx = await showLevelJumpModal();
+      if (idx !== null) loadLevel(idx);
+    });
+  }
   if (btnSubmit) btnSubmit.addEventListener('click', () => {
     if (!canAcceptPlayerInput()) return;
     submitScore();

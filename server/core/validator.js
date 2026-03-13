@@ -17,9 +17,9 @@ function parseLevel(levelString) {
   for (let row = 0; row < rows_; row++) {
     for (let col = 0; col < cols_; col++) {
       const c = rows[row][col];
-      if (c === '@') playerPos = { row, col };
+      if (c === '@' || c === '%') playerPos = { row, col };
       if (c === '$' || c === '*') boxPositions.push({ row, col });
-      if (c === '.' || c === '*') targetPositions.push({ row, col });
+      if (c === '.' || c === '*' || c === '%') targetPositions.push({ row, col });
     }
   }
   return { levelData: rows, gridSize: { rows: rows_, cols: cols_ }, playerPos, boxPositions, targetPositions };
