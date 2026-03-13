@@ -531,6 +531,7 @@ body[data-control-mode="buttons"] .swipe-hint {
   min-height: 200px;
   overflow: auto;
   margin-bottom: 12px;
+  text-align: center;
 }
 
 .editor-board {
