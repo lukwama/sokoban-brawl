@@ -153,6 +153,18 @@ body {
   white-space: nowrap;
 }
 
+.level-badge-row {
+  width: 100%;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--accent);
+  padding: 2px 8px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .steps-display {
   display: flex;
   align-items: center;
