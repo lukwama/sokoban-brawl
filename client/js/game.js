@@ -116,9 +116,39 @@ function showLevelJumpModal() {
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') tryGo(); });
     overlay.addEventListener('click', (e) => { if (e.target === overlay) close(null); });
 
-    input.focus();
-    input.select();
+    // en_US: Do NOT auto-focus the input — prevents mobile virtual keyboard from covering the slider
+    // zh_TW: 不自動聚焦輸入框 — 避免手機虛擬鍵盤遮擋下方滑棒
   });
+}
+
+// en_US: Toast notification — lightweight, auto-dismiss notification at bottom of screen
+// zh_TW: Toast 通知 — 輕量自動消失的底部通知
+function showToast(message, duration = 3000) {
+  const existing = document.querySelector('.toast-notification');
+  if (existing) existing.remove();
+  const toast = document.createElement('div');
+  toast.className = 'toast-notification';
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add('visible'));
+  setTimeout(() => {
+    toast.classList.remove('visible');
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+}
+
+// en_US: Copy the current level's shareable URL to clipboard
+// zh_TW: 將當前關卡的分享連結複製到剪貼簿
+async function shareLevelLink() {
+  const lid = getLevelId(levelIndex);
+  if (lid === null) return;
+  const url = `https://sokoban.lukwama.com/singleplayer/${lid}`;
+  try {
+    await navigator.clipboard.writeText(url);
+    showToast('Link copied to clipboard!\n連結已複製到剪貼簿！');
+  } catch {
+    showToast('Failed to copy link\n複製連結失敗');
+  }
 }
 
 function getBaseUrl() {
@@ -587,10 +617,12 @@ function updateGameplayControlState() {
   });
 
   if (btnUndo) btnUndo.disabled = disableGameplay || positionHistory.length === 0;
-  if (btnReset) btnReset.disabled = disableGameplay;
+  if (btnReset) btnReset.disabled = !state;
   if (btnSubmit) btnSubmit.disabled = disableGameplay || moveHistory.length === 0;
-  if (btnPrevLevel) btnPrevLevel.disabled = disableGameplay || levelIndex <= 0;
-  if (btnNextLevel) btnNextLevel.disabled = disableGameplay || levelIndex >= all.length - 1;
+  // en_US: Level nav buttons remain enabled during playback so users can switch levels freely
+  // zh_TW: 播放期間關卡切換按鈕保持啟用，讓玩家可自由切換關卡
+  if (btnPrevLevel) btnPrevLevel.disabled = !state || levelIndex <= 0;
+  if (btnNextLevel) btnNextLevel.disabled = !state || levelIndex >= all.length - 1;
   if (btnNextLevelAfterWin) btnNextLevelAfterWin.disabled = disableGameplay || levelIndex >= all.length - 1;
 }
 
@@ -1057,21 +1089,26 @@ function initGame() {
     if (!canAcceptPlayerInput()) return;
     undo();
   });
+  // en_US: Level nav stops playback immediately and switches level (no lock during replay)
+  // zh_TW: 關卡切換會立即停止播放並切換關卡（播放期間不鎖定）
   if (btnPrevLevel) btnPrevLevel.addEventListener('click', () => {
+    if (isPlaybackActive) { stopPlayback(); loadLevel(levelIndex - 1); return; }
     if (!canAcceptPlayerInput()) return;
     loadLevel(levelIndex - 1);
   });
   if (btnNextLevel) btnNextLevel.addEventListener('click', () => {
+    if (isPlaybackActive) { stopPlayback(); loadLevel(levelIndex + 1); return; }
     if (!canAcceptPlayerInput()) return;
     loadLevel(levelIndex + 1);
   });
   if (btnReset) btnReset.addEventListener('click', () => {
+    if (isPlaybackActive) { stopPlayback(); loadLevel(levelIndex); return; }
     if (!canAcceptPlayerInput()) return;
     loadLevel(levelIndex);
   });
   if (levelNumEl) {
     levelNumEl.addEventListener('click', async () => {
-      if (isPlaybackActive) return;
+      if (isPlaybackActive) stopPlayback();
       const idx = await showLevelJumpModal();
       if (idx !== null) loadLevel(idx);
     });
@@ -1080,6 +1117,8 @@ function initGame() {
     if (!canAcceptPlayerInput()) return;
     submitScore();
   });
+  const btnShare = document.getElementById('btnShare');
+  if (btnShare) btnShare.addEventListener('click', shareLevelLink);
   if (btnNextLevelAfterWin) btnNextLevelAfterWin.addEventListener('click', () => {
     if (!canAcceptPlayerInput()) return;
     loadLevel(levelIndex + 1);
@@ -1096,6 +1135,18 @@ function initGame() {
     const totalLb = levels.length + customLevels.length;
     if (lbLevelIndex < totalLb - 1) { lbLevelIndex++; updateLbDisplay(); refreshLeaderboard(); }
   });
+  // en_US: Click leaderboard level number to jump to any level's leaderboard
+  // zh_TW: 點擊排行榜關卡數字可快速跳到任意關卡的排行榜
+  if (lbLevelNum) {
+    lbLevelNum.addEventListener('click', async () => {
+      const idx = await showLevelJumpModal();
+      if (idx !== null) {
+        lbLevelIndex = idx;
+        updateLbDisplay();
+        refreshLeaderboard();
+      }
+    });
+  }
   if (lbRefresh) lbRefresh.addEventListener('click', refreshLeaderboard);
   bindControlModeButtons();
   bindSwipeControls();

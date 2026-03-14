@@ -15,6 +15,9 @@ The game is currently open for public testing! Try out the latest single-player 
 * **Level Editor**: Build and customize your own stages.
 * **Global Leaderboard**: Track top performances and compare results.
 * **Leaderboard Replay Support**: Review gameplay replays tied to leaderboard entries.
+* **Level Jump**: Click the level number in game or leaderboard to quickly jump to any level.
+* **Share**: Copy a level's direct link to share with others.
+* **Deep Links**: Access any level directly via `/singleplayer/:levelId`.
 
 #### 🎮 Objective
 
@@ -72,12 +75,23 @@ Set up GitHub webhook for automatic deployment:
 #### 🧪 Testing & Validation
 
 The server includes comprehensive anti-cheat and custom level validation:
-- **[Test Scripts Guide](TEST_SCRIPTS_README.md)** - How to run tests
+- **[Test Scripts Guide](tests/README.md)** - How to run tests
 - **[Validation Report](docs/VALIDATION_COMPLETE.md)** - Test results (100% success)
 - **[Anti-Cheat Report](docs/ANTI_CHEAT_TEST_REPORT.md)** - Detailed anti-cheat analysis
 - **[Custom Level Report](docs/CUSTOM_LEVEL_TEST_REPORT.md)** - Custom level system details
 
-**Quick test**: `node comprehensive_validation_test.js`
+**Quick test**: `node tests/comprehensive_validation_test.js`
+
+#### 📂 Project Structure
+
+```
+client/     — Frontend HTML/CSS/JS
+server/     — Backend (Express + Socket.io + SQLite)
+scripts/    — Deploy & utility scripts
+docs/       — Documentation
+tests/      — Test scripts & utilities
+archive/    — Historical reports (safe to delete)
+```
 
 ---
 
@@ -96,6 +110,9 @@ The server includes comprehensive anti-cheat and custom level validation:
 * **關卡編輯器**：自建與自訂關卡。
 * **全球排行榜**：追蹤頂尖成績並比較。
 * **排行榜回放**：可觀看排行榜紀錄的遊玩回放。
+* **快速跳關**：在遊戲或排行榜介面點擊關卡數字，可快速跳到任意關卡。
+* **分享**：複製關卡專屬連結與他人分享。
+* **深層連結**：透過 `/singleplayer/:levelId` 直接存取任意關卡。
 
 #### 🎮 目標
 
@@ -153,9 +170,20 @@ curl -X POST http://localhost:3000/api/leaderboard/0 -H "Content-Type: applicati
 #### 🧪 測試與驗證
 
 伺服器包含全面的防作弊和自訂關卡驗證：
-- **[測試腳本指南](TEST_SCRIPTS_README.md)** - 如何執行測試
+- **[測試腳本指南](tests/README.md)** - 如何執行測試
 - **[驗證報告](docs/VALIDATION_COMPLETE.md)** - 測試結果（100% 成功）
 - **[防作弊報告](docs/ANTI_CHEAT_TEST_REPORT.md)** - 詳細防作弊分析
 - **[自訂關卡報告](docs/CUSTOM_LEVEL_TEST_REPORT.md)** - 自訂關卡系統細節
 
-**快速測試**：`node comprehensive_validation_test.js`
+**快速測試**：`node tests/comprehensive_validation_test.js`
+
+#### 📂 專案結構
+
+```
+client/     — 前端 HTML/CSS/JS
+server/     — 後端（Express + Socket.io + SQLite）
+scripts/    — 部署與工具腳本
+docs/       — 文件
+tests/      — 測試腳本與工具
+archive/    — 歷史報告（可安全刪除）
+```
