@@ -9,13 +9,23 @@ import { readFileSync, statSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { createHmac } from 'crypto';
-import { spawn } from 'child_process';
+import { spawn, execSync } from 'child_process';
 import { initDb, getLeaderboard, hasDuplicateMoves, insertRecord, getNextCustomLevelId, isDuplicateLevel, insertCustomLevel, getCustomLevels, getCustomLevelById } from './db.js';
 import { validateSolution } from './core/validator.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const levels = JSON.parse(readFileSync(join(__dirname, 'levels.json'), 'utf8'));
 const clientDir = join(__dirname, '..', 'client');
+
+// en_US: Read git commit info at startup for the /health endpoint
+// zh_TW: 啟動時讀取 git commit 資訊，供 /health 端點使用
+let gitInfo = { commit: 'unknown', branch: 'unknown', date: 'unknown' };
+try {
+  const repoDir = join(__dirname, '..');
+  gitInfo.commit = execSync('git rev-parse --short HEAD', { cwd: repoDir, encoding: 'utf8' }).trim();
+  gitInfo.branch = execSync('git rev-parse --abbrev-ref HEAD', { cwd: repoDir, encoding: 'utf8' }).trim();
+  gitInfo.date = execSync('git log -1 --format=%ci', { cwd: repoDir, encoding: 'utf8' }).trim();
+} catch { /* git info unavailable */ }
 
 const app = express();
 app.use((req, res, next) => {
@@ -60,13 +70,15 @@ app.post('/webhook/github', express.raw({ type: 'application/json' }), (req, res
     return res.json({ message: `Branch ${branch} ignored` });
   }
 
-  console.log(`[Webhook] Push to ${branch} detected, triggering deployment...`);
-  res.json({ message: 'Deployment triggered' });
+  const headCommit = payload.head_commit?.id?.substring(0, 7) || 'unknown';
+  console.log(`[Webhook] Push to ${branch} detected (commit: ${headCommit}), triggering deployment...`);
+  res.json({ message: 'Deployment triggered', commit: headCommit });
 
   const deployScript = join(__dirname, '..', 'scripts', 'deploy.sh');
   const deploy = spawn('bash', [deployScript], {
     detached: true,
-    stdio: 'ignore'
+    stdio: 'ignore',
+    env: { ...process.env, DEPLOY_BRANCH: targetBranch },
   });
   deploy.unref();
 });
@@ -106,7 +118,13 @@ async function start() {
   await initDb();
 
   app.get('/health', (req, res) => {
-    res.json({ status: 'ok', service: 'sokoban-brawl' });
+    res.json({
+      status: 'ok',
+      service: 'sokoban-brawl',
+      version: gitInfo.commit,
+      branch: gitInfo.branch,
+      deployDate: gitInfo.date,
+    });
   });
 
   app.get('/api/levels', (req, res) => {
