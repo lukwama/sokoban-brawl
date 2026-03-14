@@ -886,7 +886,7 @@ body[data-control-mode="buttons"] .swipe-hint {
   flex-wrap: wrap;
 }
 
-.mode-btn {
+.mode-btn, .lang-btn {
   flex: 1;
   min-width: 84px;
   padding: 10px 12px;
@@ -896,17 +896,31 @@ body[data-control-mode="buttons"] .swipe-hint {
   color: var(--text-dim);
   cursor: pointer;
   transition: border-color 0.15s, color 0.15s, background 0.15s;
+  font-size: 0.95rem;
+  line-height: 1.3;
+  text-align: center;
 }
 
-.mode-btn:hover {
+.mode-btn:hover, .lang-btn:hover {
   color: var(--text);
   border-color: var(--accent);
 }
 
-.mode-btn.active {
+.mode-btn.active, .lang-btn.active {
   color: var(--accent);
   background: rgba(122, 162, 247, 0.15);
   border-color: var(--accent);
+}
+
+/* en_US: Bilingual two-line text (en above, zh below)
+   zh_TW: 雙語兩行文字（英文在上、中文在下） */
+.i18n-line {
+  display: block;
+  line-height: 1.3;
+}
+.i18n-sub {
+  font-size: 0.82em;
+  opacity: 0.75;
 }
 
 /* ----- Responsive: small screens ----- */
