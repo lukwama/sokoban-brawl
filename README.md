@@ -48,6 +48,8 @@ npm install
 npm run dev
 ```
 
+On first run, the server automatically seeds **three demo custom levels** (IDs 57, 58, 59) from [lukwama.com/sokoban](https://lukwama.com/sokoban) defaultXMLData, with creator name **lukwama** and one leaderboard record per level. No extra step required. To re-apply these defaults later (e.g. after DB drift): `node scripts/restore_default_custom_levels.js`.
+
 **API examples:**
 ```bash
 curl http://localhost:3000/api/leaderboard/0
@@ -126,6 +128,8 @@ cd sokoban-brawl
 npm install
 npm run dev
 ```
+
+首次啟動時，伺服器會自動種入 **三個示範自訂關卡**（ID 57、58、59），來源為 [lukwama.com/sokoban](https://lukwama.com/sokoban) 的 defaultXMLData，上傳者名稱為 **lukwama**，且每關各有一筆排行榜記錄，無需額外步驟。日後若要重新套用這三關預設（例如 DB 偏離後）：執行 `node scripts/restore_default_custom_levels.js`。
 
 **API 範例：**
 ```bash

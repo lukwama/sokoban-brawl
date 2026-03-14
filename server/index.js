@@ -12,6 +12,7 @@ import { createHmac } from 'crypto';
 import { spawn, execSync } from 'child_process';
 import { initDb, getLeaderboard, hasDuplicateMoves, insertRecord, getNextCustomLevelId, isDuplicateLevel, insertCustomLevel, getCustomLevels, getCustomLevelById } from './db.js';
 import { validateSolution } from './core/validator.js';
+import { seedDefaultCustomLevelsIfNeeded } from './seedDefaultLevels.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const levels = JSON.parse(readFileSync(join(__dirname, 'levels.json'), 'utf8'));
@@ -116,6 +117,7 @@ const PORT = process.env.PORT || 3000;
 
 async function start() {
   await initDb();
+  seedDefaultCustomLevelsIfNeeded();
 
   app.get('/health', (req, res) => {
     res.json({

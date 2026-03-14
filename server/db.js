@@ -194,11 +194,11 @@ export function getCustomLevelById(levelId) {
   );
   const rows = res[0]?.values || [];
   if (rows.length === 0) return null;
-  
+
   const cols = res[0].columns;
   const idx = (k) => cols.indexOf(k);
   const v = rows[0];
-  
+
   return {
     levelId: v[idx('level_id')],
     levelData: v[idx('level_data')],
@@ -206,4 +206,33 @@ export function getCustomLevelById(levelId) {
     solutionSteps: v[idx('solution_steps')],
     createdAt: v[idx('created_at')],
   };
+}
+
+// en_US: Update existing custom level (e.g. restore defaultXMLData maps for 57,58,59)
+// zh_TW: 更新既有自訂關卡（例如還原 57、58、59 的 defaultXMLData 地圖）
+export function updateCustomLevel(levelId, levelData, creatorName, solutionMoves, solutionSteps) {
+  const d = getDb();
+  const id = parseInt(levelId, 10);
+  const hash = hashLevelData(levelData);
+  d.run(
+    `UPDATE custom_levels SET level_data = '${escape(levelData)}', level_hash = '${escape(hash)}',
+     creator_name = '${escape(creatorName)}', solution_moves = '${escape(solutionMoves)}', solution_steps = ${parseInt(solutionSteps, 10)}
+     WHERE level_id = ${id}`
+  );
+  saveDb();
+}
+
+// en_US: Insert custom level with a specific level_id (for migration/restore only)
+// zh_TW: 以指定 level_id 插入自訂關卡（僅用於遷移／還原）
+export function insertCustomLevelWithId(levelId, levelData, creatorName, solutionMoves, solutionSteps) {
+  const d = getDb();
+  const id = parseInt(levelId, 10);
+  const hash = hashLevelData(levelData);
+  const createdAt = Date.now();
+  d.run(
+    `INSERT OR REPLACE INTO custom_levels (level_id, level_data, level_hash, creator_name, solution_moves, solution_steps, created_at)
+     VALUES (${id}, '${escape(levelData)}', '${escape(hash)}', '${escape(creatorName)}', '${escape(solutionMoves)}', ${parseInt(solutionSteps, 10)}, ${createdAt})`
+  );
+  saveDb();
+  return { levelId: id, createdAt };
 }
