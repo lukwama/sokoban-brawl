@@ -566,11 +566,23 @@ function renderBoard() {
 }
 
 function updateUrlForLevel(idx) {
-  const lid = getLevelId(idx);
-  if (lid === null) return;
-  const newPath = `/singleplayer/${lid}`;
+  const validationIdx = levels.length + customLevels.length;
+  const isValidationLevel = validationTestLevel !== null && idx === validationIdx;
+  let newPath = null;
+  let historyState = null;
+
+  if (isValidationLevel) {
+    newPath = '/singleplayer/validate';
+    historyState = { validation: true };
+  } else {
+    const lid = getLevelId(idx);
+    if (lid === null) return;
+    newPath = `/singleplayer/${lid}`;
+    historyState = { levelId: lid };
+  }
+
   if (window.location.pathname !== newPath) {
-    history.replaceState({ levelId: lid }, '', newPath);
+    history.replaceState(historyState, '', newPath);
   }
 }
 
@@ -590,7 +602,10 @@ function loadLevel(idx) {
   }
 
   const all = getAllLevels();
-  if (idx < 0 || idx >= all.length) return;
+  if (idx < 0 || idx >= all.length) {
+    isLevelTransitioning = false;
+    return;
+  }
   levelIndex = idx;
   const levelString = all[levelIndex];
   const parsed = parseLevel(levelString);
@@ -633,8 +648,8 @@ function syncLbLevel() {
 function updateLbDisplay() {
   const totalLb = levels.length + customLevels.length;
   if (lbLevelNum) lbLevelNum.textContent = lbLevelIndex + 1;
-  if (lbPrevLevel) lbPrevLevel.disabled = lbLevelIndex <= 0;
-  if (lbNextLevel) lbNextLevel.disabled = lbLevelIndex >= totalLb - 1;
+  if (lbPrevLevel) lbPrevLevel.disabled = totalLb <= 1;
+  if (lbNextLevel) lbNextLevel.disabled = totalLb <= 1;
   const lbBadge = document.getElementById('lbLevelBadge');
   if (lbBadge) {
     const isCustom = lbLevelIndex >= levels.length;
@@ -672,7 +687,10 @@ function doMove(key, recordMove = true) {
         const area = document.querySelector('.game-area');
         if (area) area.classList.add('fade-out');
         setTimeout(() => {
-          loadLevel(levelIndex + 1);
+          const total = getAllLevels().length;
+          if (total > 0) {
+            loadLevel((levelIndex + 1) % total);
+          }
           if (area) area.classList.remove('fade-out');
           boardEl.classList.remove('win-glow');
         }, 500);
@@ -742,9 +760,15 @@ function updateGameplayControlState() {
   if (btnSubmit) btnSubmit.disabled = disableGameplay || moveHistory.length === 0;
   // en_US: Level nav buttons remain enabled during playback so users can switch levels freely
   // zh_TW: 播放期間關卡切換按鈕保持啟用，讓玩家可自由切換關卡
-  if (btnPrevLevel) btnPrevLevel.disabled = !state || levelIndex <= 0;
-  if (btnNextLevel) btnNextLevel.disabled = !state || levelIndex >= all.length - 1;
-  if (btnNextLevelAfterWin) btnNextLevelAfterWin.disabled = disableGameplay || levelIndex >= all.length - 1;
+  if (btnPrevLevel) btnPrevLevel.disabled = !state || all.length <= 1;
+  if (btnNextLevel) btnNextLevel.disabled = !state || all.length <= 1;
+  if (btnNextLevelAfterWin) btnNextLevelAfterWin.disabled = disableGameplay || all.length <= 1;
+}
+
+function getWrappedLevelIndex(idx) {
+  const total = getAllLevels().length;
+  if (total <= 0) return null;
+  return ((idx % total) + total) % total;
 }
 
 function canAcceptPlayerInput() {
@@ -1282,14 +1306,18 @@ function initGame() {
   // en_US: Level nav stops playback immediately and switches level (no lock during replay)
   // zh_TW: 關卡切換會立即停止播放並切換關卡（播放期間不鎖定）
   if (btnPrevLevel) btnPrevLevel.addEventListener('click', () => {
-    if (isPlaybackActive) { stopPlayback(); loadLevel(levelIndex - 1); return; }
+    const nextIdx = getWrappedLevelIndex(levelIndex - 1);
+    if (nextIdx === null) return;
+    if (isPlaybackActive) { stopPlayback(); loadLevel(nextIdx); return; }
     if (!canAcceptPlayerInput()) return;
-    loadLevel(levelIndex - 1);
+    loadLevel(nextIdx);
   });
   if (btnNextLevel) btnNextLevel.addEventListener('click', () => {
-    if (isPlaybackActive) { stopPlayback(); loadLevel(levelIndex + 1); return; }
+    const nextIdx = getWrappedLevelIndex(levelIndex + 1);
+    if (nextIdx === null) return;
+    if (isPlaybackActive) { stopPlayback(); loadLevel(nextIdx); return; }
     if (!canAcceptPlayerInput()) return;
-    loadLevel(levelIndex + 1);
+    loadLevel(nextIdx);
   });
   if (btnReset) btnReset.addEventListener('click', () => {
     if (isPlaybackActive) { stopPlayback(); loadLevel(levelIndex); return; }
@@ -1310,8 +1338,10 @@ function initGame() {
   const btnShare = document.getElementById('btnShare');
   if (btnShare) btnShare.addEventListener('click', shareLevelLink);
   if (btnNextLevelAfterWin) btnNextLevelAfterWin.addEventListener('click', () => {
+    const nextIdx = getWrappedLevelIndex(levelIndex + 1);
+    if (nextIdx === null) return;
     if (!canAcceptPlayerInput()) return;
-    loadLevel(levelIndex + 1);
+    loadLevel(nextIdx);
   });
 
   document.querySelectorAll('.tab-btn').forEach((btn) => {
@@ -1319,11 +1349,18 @@ function initGame() {
   });
 
   if (lbPrevLevel) lbPrevLevel.addEventListener('click', () => {
-    if (lbLevelIndex > 0) { lbLevelIndex--; updateLbDisplay(); refreshLeaderboard(); }
+    const totalLb = levels.length + customLevels.length;
+    if (totalLb <= 0) return;
+    lbLevelIndex = ((lbLevelIndex - 1) % totalLb + totalLb) % totalLb;
+    updateLbDisplay();
+    refreshLeaderboard();
   });
   if (lbNextLevel) lbNextLevel.addEventListener('click', () => {
     const totalLb = levels.length + customLevels.length;
-    if (lbLevelIndex < totalLb - 1) { lbLevelIndex++; updateLbDisplay(); refreshLeaderboard(); }
+    if (totalLb <= 0) return;
+    lbLevelIndex = (lbLevelIndex + 1) % totalLb;
+    updateLbDisplay();
+    refreshLeaderboard();
   });
   // en_US: Click leaderboard level number to jump to any level's leaderboard
   // zh_TW: 點擊排行榜關卡數字可快速跳到任意關卡的排行榜
@@ -1387,6 +1424,16 @@ function initGame() {
   // en_US: Handle browser back/forward navigation for SPA level URLs
   // zh_TW: 處理瀏覽器前進/後退按鈕的 SPA 關卡網址導航
   window.addEventListener('popstate', (e) => {
+    if (/^\/singleplayer\/validate\/?$/.test(window.location.pathname)) {
+      if (validationTestLevel !== null) {
+        const validationIdx = levels.length + customLevels.length;
+        if (validationIdx !== levelIndex) loadLevel(validationIdx);
+      } else if (levelIndex !== 0) {
+        loadLevel(0);
+      }
+      showTab('game');
+      return;
+    }
     const m = window.location.pathname.match(/^\/singleplayer\/(\d+)\/?$/);
     if (m) {
       const urlLevelId = parseInt(m[1], 10);
@@ -1411,13 +1458,19 @@ function initGame() {
     const all = getAllLevels();
     if (all.length === 0) return;
     let idx = 0;
-    const m = window.location.pathname.match(/^\/singleplayer\/(\d+)\/?$/);
-    if (m) {
-      const urlLevelId = parseInt(m[1], 10);
-      let found = findLevelIndexByLevelId(urlLevelId);
-      if (found === null) found = await ensureLevelById(urlLevelId);
-      if (found !== null) idx = found;
-      else await showError(tSingle('level.notFound'), tSingle('level.notFound'));
+    if (/^\/singleplayer\/validate\/?$/.test(window.location.pathname)) {
+      if (validationTestLevel !== null) {
+        idx = levels.length + customLevels.length;
+      }
+    } else {
+      const m = window.location.pathname.match(/^\/singleplayer\/(\d+)\/?$/);
+      if (m) {
+        const urlLevelId = parseInt(m[1], 10);
+        let found = findLevelIndexByLevelId(urlLevelId);
+        if (found === null) found = await ensureLevelById(urlLevelId);
+        if (found !== null) idx = found;
+        else await showError(tSingle('level.notFound'), tSingle('level.notFound'));
+      }
     }
     loadLevel(idx);
   })();
