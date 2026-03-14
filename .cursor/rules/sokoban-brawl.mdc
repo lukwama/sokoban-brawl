@@ -12,7 +12,7 @@ alwaysApply: true
 ## 技術棧（當前實作）
 - **伺服器**：Node.js 18+、ESM、Express、Socket.io、sql.js（SQLite 記憶體/檔案）、`server/core/validator.js` 推箱路徑驗證。
 - **客戶端**：`client/` 靜態 HTML/CSS/JS，預設連 `localhost:3000`，可改為正式站網址。
-- **API**：GET/POST `/api/leaderboard/:levelId`、GET `/health`；關卡定義在 `server/levels.json`。
+- **API**：GET/POST `/api/leaderboard/:levelId`、GET `/health`、GET `/api/levels`、GET `/api/levels/:levelId`、GET/POST `/api/custom-levels`；關卡定義在 `server/levels.json`。
 - **部署**：正式站 https://sokoban.lukwama.com，見 `docs/DEPLOYMENT.md`（Nginx + Let's Encrypt + systemd）。
 
 ## 開發原則

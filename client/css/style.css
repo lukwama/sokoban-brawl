@@ -1026,6 +1026,34 @@ body[data-control-mode="buttons"] .swipe-hint {
   color: var(--accent);
 }
 
+/* ----- Toast notification ----- */
+.toast-notification {
+  position: fixed;
+  bottom: calc(var(--tab-h) + 24px + var(--safe-bottom));
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 20px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  white-space: pre-line;
+  text-align: center;
+  z-index: 300;
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: none;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  max-width: 320px;
+}
+
+.toast-notification.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
 /* ----- Safe area for notched devices ----- */
 @supports (padding: max(0px)) {
   .tab-bar {
