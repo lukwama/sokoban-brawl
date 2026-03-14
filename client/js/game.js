@@ -7,6 +7,117 @@ const STORAGE_URL = 'sokoban_brawl_server_url';
 const STORAGE_NAME = 'sokoban_brawl_player_name';
 const STORAGE_CUSTOM = 'sokobanCustomLevels';
 const STORAGE_CONTROL_MODE = 'sokoban_brawl_control_mode';
+const STORAGE_LANG = 'sokoban_brawl_lang';
+
+// en_US: i18n dictionary — all UI strings in English and Traditional Chinese
+// zh_TW: 國際化字典 — 所有 UI 字串的英文與繁體中文版本
+const I18N = {
+  'control.auto':      { en: 'Auto',       zh: '自動' },
+  'control.swipe':     { en: 'Swipe',      zh: '滑動' },
+  'control.buttons':   { en: 'Buttons',    zh: '按鈕' },
+  'lang.bilingual':    { en: 'Bilingual',  zh: '雙語' },
+  'lang.en':           { en: 'English',    zh: 'English' },
+  'lang.zh':           { en: '繁體中文',    zh: '繁體中文' },
+  'tab.game':          { en: 'Single Player',  zh: '單人遊戲' },
+  'tab.multi':         { en: 'Multiplayer',    zh: '多人遊戲' },
+  'tab.editor':        { en: 'Level Editor',   zh: '關卡編輯器' },
+  'tab.leaderboard':   { en: 'Leaderboard',    zh: '排行榜' },
+  'tab.settings':      { en: 'Settings',       zh: '設定介面' },
+  'lb.player':         { en: 'Player',   zh: '玩家' },
+  'lb.time':           { en: 'Time',     zh: '時間' },
+  'multi.title':       { en: 'Multiplayer',    zh: '多人遊戲' },
+  'multi.coming':      { en: 'Coming Soon',    zh: '即將開放' },
+  'badge.testing':     { en: 'Testing',   zh: '測試中' },
+  'badge.custom':      { en: 'Custom',    zh: '玩家自訂' },
+  'btn.ok':            { en: 'OK',        zh: '確定' },
+  'btn.cancel':        { en: 'Cancel',    zh: '取消' },
+  'jump.title':        { en: 'Jump to Level',  zh: '跳關' },
+  'jump.go':           { en: 'Go',        zh: '前往' },
+  'toast.linkCopied':  { en: 'Link copied to clipboard!', zh: '連結已複製到剪貼簿！' },
+  'toast.linkFailed':  { en: 'Failed to copy link',       zh: '複製連結失敗' },
+  'editor.invalid':    { en: 'Invalid Level',  zh: '關卡無效' },
+  'editor.needPlayer': { en: 'Must have exactly one player',  zh: '必須有且僅有一個玩家' },
+  'editor.needBox':    { en: 'Need at least one box',         zh: '至少需要一個箱子' },
+  'editor.startTest':  { en: 'Start Testing',  zh: '開始測試通關' },
+  'editor.testBody':   { en: 'Please complete this level first, then you can upload it!', zh: '請先通關此關卡，通關後即可上傳！' },
+  'upload.nameTitle':  { en: 'Player Name Not Set', zh: '玩家名稱未設定' },
+  'upload.nameBody':   { en: 'Please set your player name in settings (cannot use default name Player).', zh: '請先在設定中設定您的玩家名稱（不可使用預設名稱 Player）' },
+  'upload.congrats':   { en: 'Congratulations!', zh: '恭喜通關！' },
+  'upload.confirm':    { en: 'Upload this level?', zh: '是否要將此關卡上傳到伺服器？' },
+  'upload.creator':    { en: 'Creator', zh: '上傳者' },
+  'upload.steps':      { en: 'Steps',   zh: '步數' },
+  'upload.success':    { en: 'Upload Successful!', zh: '上傳成功！' },
+  'upload.failed':     { en: 'Upload Failed',      zh: '上傳失敗' },
+  'upload.network':    { en: 'Network error',       zh: '網路錯誤' },
+  'level.notFound':    { en: 'Level not found',     zh: '此關卡不存在' },
+  'swipe.hint':        { en: 'Swipe to move', zh: '滑動操作' },
+};
+
+let currentLang = 'bilingual';
+
+function t(key) {
+  const entry = I18N[key];
+  if (!entry) return key;
+  if (currentLang === 'en') return entry.en;
+  if (currentLang === 'zh') return entry.zh;
+  return `${entry.en}\n${entry.zh}`;
+}
+
+function tSingle(key) {
+  const entry = I18N[key];
+  if (!entry) return key;
+  if (currentLang === 'en') return entry.en;
+  if (currentLang === 'zh') return entry.zh;
+  return `${entry.en} / ${entry.zh}`;
+}
+
+function tHtml(key) {
+  const entry = I18N[key];
+  if (!entry) return key;
+  if (currentLang === 'en') return entry.en;
+  if (currentLang === 'zh') return entry.zh;
+  return `<span class="i18n-line">${entry.en}</span><span class="i18n-line i18n-sub">${entry.zh}</span>`;
+}
+
+function applyLanguage() {
+  document.querySelectorAll('[data-i18n]').forEach((el) => {
+    const key = el.dataset.i18n;
+    el.innerHTML = tHtml(key);
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach((el) => {
+    el.title = tSingle(el.dataset.i18nTitle);
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
+    const entry = I18N[el.dataset.i18nPlaceholder];
+    if (entry) {
+      if (currentLang === 'en') el.placeholder = entry.en;
+      else if (currentLang === 'zh') el.placeholder = entry.zh;
+      else el.placeholder = `${entry.en} / ${entry.zh}`;
+    }
+  });
+  // Leaderboard table headers
+  const lbHead = document.querySelector('.lb-table thead tr');
+  if (lbHead) {
+    const en = I18N['lb.player'], et = I18N['lb.time'];
+    const playerTh = lbHead.children[1];
+    const timeTh = lbHead.children[2];
+    if (playerTh) playerTh.innerHTML = tHtml('lb.player');
+    if (timeTh) timeTh.innerHTML = tHtml('lb.time');
+  }
+  // Multiplayer placeholder
+  const multiTitle = document.querySelector('#panelMulti h3');
+  const multiP = document.querySelector('#panelMulti p');
+  if (multiTitle) multiTitle.innerHTML = tHtml('multi.title');
+  if (multiP) multiP.innerHTML = tHtml('multi.coming');
+  // Swipe hint
+  if (swipeHintEl) swipeHintEl.textContent = tSingle('swipe.hint');
+  // Language toggle active state
+  document.querySelectorAll('.lang-btn').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.lang === currentLang);
+  });
+  // Refresh badge text
+  if (state) renderBoard();
+}
 
 // en_US: Modal dialog system — replaces native alert/confirm
 // zh_TW: Modal 對話框系統 — 取代原生 alert/confirm
@@ -50,11 +161,11 @@ function showModal({ icon = 'info', title = '', body = '', buttons = [], onClose
 }
 
 function showAlert(title, body, icon = 'info') {
-  return showModal({ icon, title, body, buttons: [{ text: '確定', value: true, primary: true }] });
+  return showModal({ icon, title, body, buttons: [{ text: tSingle('btn.ok'), value: true, primary: true }] });
 }
 
 function showConfirm(title, body, icon = 'confirm') {
-  return showModal({ icon, title, body, buttons: [{ text: '取消', value: false }, { text: '確定', value: true, primary: true }] });
+  return showModal({ icon, title, body, buttons: [{ text: tSingle('btn.cancel'), value: false }, { text: tSingle('btn.ok'), value: true, primary: true }] });
 }
 
 function showError(title, body) {
@@ -79,15 +190,15 @@ function showLevelJumpModal() {
 
     let html = `<div class="modal-card">`;
     html += `<span class="modal-icon modal-icon-info">⇥</span>`;
-    html += `<div class="modal-title">Jump to Level / 跳關</div>`;
+    html += `<div class="modal-title">${tSingle('jump.title')}</div>`;
     html += `<div class="level-jump-body">`;
     html += `<input type="number" id="jumpLevelInput" class="jump-input" min="1" max="${totalLevels}" value="${current}" />`;
     html += `<input type="range" id="jumpLevelSlider" class="jump-slider" min="1" max="${totalLevels}" value="${current}" step="1" />`;
     html += `<div class="jump-range-labels"><span>1</span><span>${totalLevels}</span></div>`;
     html += `</div>`;
     html += `<div class="modal-actions">`;
-    html += `<button class="modal-btn" data-action="cancel">Cancel</button>`;
-    html += `<button class="modal-btn modal-btn-primary" data-action="go">Go</button>`;
+    html += `<button class="modal-btn" data-action="cancel">${tSingle('btn.cancel')}</button>`;
+    html += `<button class="modal-btn modal-btn-primary" data-action="go">${tSingle('jump.go')}</button>`;
     html += `</div></div>`;
 
     overlay.innerHTML = html;
@@ -145,9 +256,9 @@ async function shareLevelLink() {
   const url = `https://sokoban.lukwama.com/singleplayer/${lid}`;
   try {
     await navigator.clipboard.writeText(url);
-    showToast('Link copied to clipboard!\n連結已複製到剪貼簿！');
+    showToast(t('toast.linkCopied'));
   } catch {
-    showToast('Failed to copy link\n複製連結失敗');
+    showToast(t('toast.linkFailed'));
   }
 }
 
@@ -440,18 +551,27 @@ function renderBoard() {
     const customIndex = levelIndex - levels.length;
     const customLevel = isCustom ? customLevels[customIndex] : null;
     badgeEl.hidden = !isCustom;
-    if (isCustom) {
+      if (isCustom) {
       if (customLevel && customLevel.creatorName) {
         const ts = new Date(customLevel.createdAt);
         const dateStr = ts.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' });
         badgeEl.textContent = `by ${customLevel.creatorName}  ${dateStr}`;
       } else {
-        badgeEl.textContent = pendingCustomLevelUpload ? '測試中' : '玩家自訂';
+        badgeEl.textContent = pendingCustomLevelUpload ? tSingle('badge.testing') : tSingle('badge.custom');
       }
     }
   }
   updateGameplayControlState();
   scheduleBoardLayout();
+}
+
+function updateUrlForLevel(idx) {
+  const lid = getLevelId(idx);
+  if (lid === null) return;
+  const newPath = `/singleplayer/${lid}`;
+  if (window.location.pathname !== newPath) {
+    history.replaceState({ levelId: lid }, '', newPath);
+  }
 }
 
 function loadLevel(idx) {
@@ -489,6 +609,7 @@ function loadLevel(idx) {
   const area = document.querySelector('.game-area');
   if (area) area.classList.remove('fade-out');
   updateGameplayControlState();
+  updateUrlForLevel(idx);
 }
 
 // en_US: Get the API level ID for a given game-level index (built-in: index=id; custom: from customLevels)
@@ -521,7 +642,7 @@ function updateLbDisplay() {
     if (isCustom) {
       const ci = lbLevelIndex - levels.length;
       const cl = customLevels[ci];
-      lbBadge.textContent = (cl && cl.creatorName) ? `by ${cl.creatorName}` : '玩家自訂';
+      lbBadge.textContent = (cl && cl.creatorName) ? `by ${cl.creatorName}` : tSingle('badge.custom');
     }
   }
 }
@@ -746,7 +867,7 @@ async function handleCustomLevelCompletion() {
     
     const defaultNames = ['Player', 'player', '匿名', '玩家', 'Anonymous'];
     if (defaultNames.includes(playerName)) {
-      await showError('玩家名稱未設定', '請先在設定中設定您的玩家名稱（不可使用預設名稱 Player）\nPlease set your player name in settings.');
+      await showError(tSingle('upload.nameTitle'), t('upload.nameBody'));
       showTab('settings');
       pendingCustomLevelUpload = null;
       validationTestLevel = null;
@@ -757,7 +878,7 @@ async function handleCustomLevelCompletion() {
       return;
     }
     
-    const confirmed = await showConfirm('恭喜通關！', `是否要將此關卡上傳到伺服器？\n上傳者：${playerName}\n步數：${steps}\n\nUpload this level?\nCreator: ${playerName}\nSteps: ${steps}`, 'success');
+    const confirmed = await showConfirm(tSingle('upload.congrats'), `${tSingle('upload.confirm')}\n${tSingle('upload.creator')}：${playerName}\n${tSingle('upload.steps')}：${steps}`, 'success');
     
     let navigateToLevelIdx = 0;
     
@@ -812,17 +933,17 @@ async function uploadCustomLevel(levelData, creatorName, solutionMoves) {
     if (res.ok && data.success) {
       setBaseUrl(base);
       setConnectionStatus(true);
-      await showSuccess('上傳成功！', `關卡 ID: ${data.levelId}\n網址: ${data.levelUrl}\n\nLevel ID: ${data.levelId}\nURL: ${data.levelUrl}`);
+      await showSuccess(tSingle('upload.success'), `Level ID: ${data.levelId}\nURL: ${data.levelUrl}`);
       return { levelId: data.levelId, levelUrl: data.levelUrl };
     } else {
       setConnectionStatus(false);
       const errorMsg = data.message || data.error || 'Unknown error';
-      await showError('上傳失敗', `${errorMsg}\nUpload failed: ${errorMsg}`);
+      await showError(tSingle('upload.failed'), errorMsg);
       return null;
     }
   } catch (err) {
     setConnectionStatus(false);
-    await showError('上傳失敗', '網路錯誤\nUpload failed: Network error');
+    await showError(tSingle('upload.failed'), t('upload.network'));
     return null;
   }
 }
@@ -902,6 +1023,13 @@ async function refreshLeaderboard() {
 
 // ---- Tabs ----
 function showTab(tabId) {
+  // en_US: Stop replay immediately when leaving game tab
+  // zh_TW: 離開遊戲分頁時立即停止重播並重設關卡
+  if (isPlaybackActive && tabId !== 'game') {
+    stopPlayback();
+    loadLevel(levelIndex);
+  }
+
   document.querySelectorAll('.tab-btn').forEach((b) => {
     b.classList.toggle('active', b.dataset.tab === tabId);
     b.setAttribute('aria-selected', b.dataset.tab === tabId ? 'true' : 'false');
@@ -915,7 +1043,15 @@ function showTab(tabId) {
     syncLbLevel();
     refreshLeaderboard();
   }
-  if (tabId === 'game') scheduleBoardLayout();
+  // en_US: When switching to game tab, sync level from leaderboard so both views stay consistent
+  // zh_TW: 切換到遊戲分頁時，從排行榜同步關卡，保持雙向一致
+  if (tabId === 'game') {
+    const totalLb = levels.length + customLevels.length;
+    if (lbLevelIndex >= 0 && lbLevelIndex < totalLb && lbLevelIndex !== levelIndex) {
+      loadLevel(lbLevelIndex);
+    }
+    scheduleBoardLayout();
+  }
 }
 
 // ---- Editor ----
@@ -942,6 +1078,26 @@ function editorStateToGrid(str) {
   editorW = rows[0]?.length || 10;
 }
 
+let editorDragging = false;
+
+function editorPlaceAt(r, c) {
+  if (r < 0 || r >= editorH || c < 0 || c >= editorW) return;
+  editorGrid[r] = editorGrid[r] || [];
+  if (editorGrid[r][c] === editorTool) return;
+  editorGrid[r][c] = editorTool;
+  editorRender();
+  editorUpdateStats();
+}
+
+function editorCellFromEvent(e) {
+  const el = document.getElementById('editorBoard');
+  if (!el) return null;
+  const touch = e.changedTouches ? e.changedTouches[0] : e;
+  const target = document.elementFromPoint(touch.clientX, touch.clientY);
+  if (!target || !target.classList.contains('editor-cell')) return null;
+  return { r: parseInt(target.dataset.r, 10), c: parseInt(target.dataset.c, 10) };
+}
+
 function editorRender() {
   const el = document.getElementById('editorBoard');
   if (!el) return;
@@ -953,7 +1109,7 @@ function editorRender() {
       const cell = document.createElement('div');
       cell.className = 'cell editor-cell';
       cell.dataset.r = r;
-          cell.dataset.c = c;
+      cell.dataset.c = c;
       const ch = editorGrid[r]?.[c] ?? ' ';
       if (ch === '?') cell.classList.add('void');
       else if (ch === '#') cell.classList.add('wall');
@@ -964,12 +1120,6 @@ function editorRender() {
       if (ch === '$' || ch === '*') cell.classList.add('box');
       if (ch === '@' || ch === '%') cell.classList.add('player');
 
-      cell.addEventListener('click', () => {
-        editorGrid[r] = editorGrid[r] || [];
-        editorGrid[r][c] = editorTool;
-        editorRender();
-        editorUpdateStats();
-      });
       el.appendChild(cell);
     }
   }
@@ -1021,15 +1171,21 @@ async function editorSave() {
   }
 
   if (playerCount !== 1) {
-    await showError('關卡無效', '必須有且僅有一個玩家\nMust have exactly one player');
+    await showError(tSingle('editor.invalid'), t('editor.needPlayer'));
     return;
   }
   if (boxCount === 0) {
-    await showError('關卡無效', '至少需要一個箱子\nNeed at least one box');
+    await showError(tSingle('editor.invalid'), t('editor.needBox'));
     return;
   }
   if (boxCount !== targetCount) {
-    await showError('關卡無效', `箱子數量（${boxCount}）必須等於目標數量（${targetCount}）\nBox count (${boxCount}) must equal target count (${targetCount})`);
+    const boxTargetEntry = I18N['editor.needBox'];
+    const msg = currentLang === 'zh'
+      ? `箱子數量（${boxCount}）必須等於目標數量（${targetCount}）`
+      : currentLang === 'en'
+      ? `Box count (${boxCount}) must equal target count (${targetCount})`
+      : `Box count (${boxCount}) must equal target count (${targetCount})\n箱子數量（${boxCount}）必須等於目標數量（${targetCount})`;
+    await showError(tSingle('editor.invalid'), msg);
     return;
   }
 
@@ -1047,7 +1203,7 @@ async function editorSave() {
   loadLevel(levelIndex);
   showTab('game');
 
-  await showAlert('開始測試通關', '請先通關此關卡，通關後即可上傳！\nPlease complete this level first, then you can upload it!');
+  await showAlert(tSingle('editor.startTest'), t('editor.testBody'));
 }
 
 function initEditor() {
@@ -1073,6 +1229,40 @@ function initEditor() {
     editorResize();
   });
   document.getElementById('btnEditorSave').addEventListener('click', editorSave);
+
+  // en_US: Drag-to-place support — mouse and touch drag to continuously place tiles
+  // zh_TW: 拖曳連續擺放 — 滑鼠及觸控拖曳以連續放置方塊
+  const board = document.getElementById('editorBoard');
+  if (board) {
+    board.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      editorDragging = true;
+      const pos = editorCellFromEvent(e);
+      if (pos) editorPlaceAt(pos.r, pos.c);
+    });
+    board.addEventListener('mousemove', (e) => {
+      if (!editorDragging) return;
+      const pos = editorCellFromEvent(e);
+      if (pos) editorPlaceAt(pos.r, pos.c);
+    });
+    document.addEventListener('mouseup', () => { editorDragging = false; });
+
+    board.addEventListener('touchstart', (e) => {
+      editorDragging = true;
+      const pos = editorCellFromEvent(e);
+      if (pos) editorPlaceAt(pos.r, pos.c);
+    }, { passive: true });
+    board.addEventListener('touchmove', (e) => {
+      if (!editorDragging) return;
+      e.preventDefault();
+      const pos = editorCellFromEvent(e);
+      if (pos) editorPlaceAt(pos.r, pos.c);
+    }, { passive: false });
+    board.addEventListener('touchend', () => { editorDragging = false; }, { passive: true });
+    board.addEventListener('touchcancel', () => { editorDragging = false; }, { passive: true });
+  }
+
   editorResize();
 }
 
@@ -1169,6 +1359,18 @@ function initGame() {
   }
   applyControlMode(getPreferredControlMode());
 
+  // en_US: Language setting — load preference and bind buttons
+  // zh_TW: 語言設定 — 載入偏好並綁定按鈕
+  currentLang = localStorage.getItem(STORAGE_LANG) || 'bilingual';
+  document.querySelectorAll('.lang-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      currentLang = btn.dataset.lang || 'bilingual';
+      localStorage.setItem(STORAGE_LANG, currentLang);
+      applyLanguage();
+    });
+  });
+  applyLanguage();
+
   document.addEventListener('keydown', (e) => {
     if (!canAcceptPlayerInput()) return;
     const map = { ArrowLeft: 'l', ArrowRight: 'r', ArrowUp: 'u', ArrowDown: 'd', KeyA: 'l', KeyD: 'r', KeyW: 'u', KeyS: 'd' };
@@ -1179,6 +1381,20 @@ function initGame() {
     } else if (e.code === 'Backspace' || e.code === 'KeyZ') {
       e.preventDefault();
       undo();
+    }
+  });
+
+  // en_US: Handle browser back/forward navigation for SPA level URLs
+  // zh_TW: 處理瀏覽器前進/後退按鈕的 SPA 關卡網址導航
+  window.addEventListener('popstate', (e) => {
+    const m = window.location.pathname.match(/^\/singleplayer\/(\d+)\/?$/);
+    if (m) {
+      const urlLevelId = parseInt(m[1], 10);
+      const idx = findLevelIndexByLevelId(urlLevelId);
+      if (idx !== null && idx !== levelIndex) {
+        loadLevel(idx);
+        showTab('game');
+      }
     }
   });
 
@@ -1201,7 +1417,7 @@ function initGame() {
       let found = findLevelIndexByLevelId(urlLevelId);
       if (found === null) found = await ensureLevelById(urlLevelId);
       if (found !== null) idx = found;
-      else await showError('關卡不存在', 'Level not found / 此關卡不存在');
+      else await showError(tSingle('level.notFound'), tSingle('level.notFound'));
     }
     loadLevel(idx);
   })();
