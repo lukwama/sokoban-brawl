@@ -1118,6 +1118,29 @@ async function uploadCustomLevel(levelData, creatorName, solutionMoves) {
   }
 }
 
+async function precheckCustomLevel(levelData) {
+  const base = getBaseUrl();
+  setConnectionStatus(false);
+  try {
+    const res = await fetch(`${base}/api/custom-levels/precheck`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ levelData })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.success) {
+      setBaseUrl(base);
+      setConnectionStatus(true);
+      return { ok: true };
+    }
+    setConnectionStatus(false);
+    return { ok: false, message: data.message || data.error || 'Precheck failed' };
+  } catch (_) {
+    setConnectionStatus(false);
+    return { ok: false, message: t('upload.network') };
+  }
+}
+
 async function submitScore(snapshot = null) {
   const base = getBaseUrl();
   const name = await ensurePlayerName();
@@ -1420,6 +1443,12 @@ async function editorSave() {
       ? `Box count (${boxCount}) must equal target count (${targetCount})`
       : `Box count (${boxCount}) must equal target count (${targetCount})\n箱子數量（${boxCount}）必須等於目標數量（${targetCount})`;
     await showError(tSingle('editor.invalid'), msg);
+    return;
+  }
+
+  const precheck = await precheckCustomLevel(str);
+  if (!precheck.ok) {
+    await showError(tSingle('editor.invalid'), precheck.message || tSingle('upload.failed'));
     return;
   }
 

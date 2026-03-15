@@ -218,6 +218,65 @@ function findDuplicateLevelId(normalizedLevelData) {
   return null;
 }
 
+function evaluateCustomLevelUploadEligibility(levelData) {
+  if (!levelData || typeof levelData !== 'string' || !levelData.trim()) {
+    return {
+      ok: false,
+      status: 400,
+      payload: {
+        success: false,
+        error: 'level_data_required',
+        message: '關卡內容為必填'
+      }
+    };
+  }
+
+  if (!isRectangularLevelData(levelData)) {
+    return {
+      ok: false,
+      status: 400,
+      payload: {
+        success: false,
+        error: 'level_not_rectangular',
+        message: '關卡必須為完整矩形且不可缺字'
+      }
+    };
+  }
+
+  const normalizedLevelData = normalizeLevelData(levelData);
+
+  if (isLevelInitiallySolved(normalizedLevelData)) {
+    return {
+      ok: false,
+      status: 400,
+      payload: {
+        success: false,
+        error: 'already_completed_level',
+        message: '關卡初始狀態已完成，請至少保留一個未在目標點上的箱子'
+      }
+    };
+  }
+
+  const duplicateLevelId = findDuplicateLevelId(normalizedLevelData);
+  if (duplicateLevelId !== null) {
+    return {
+      ok: false,
+      status: 400,
+      payload: {
+        success: false,
+        error: 'duplicate_level',
+        message: `此關卡已存在（關卡 ID: ${duplicateLevelId}）`,
+        existingLevelId: duplicateLevelId
+      }
+    };
+  }
+
+  return {
+    ok: true,
+    normalizedLevelData
+  };
+}
+
 const rawLevels = JSON.parse(readFileSync(join(__dirname, 'levels.json'), 'utf8'));
 const nonRectBuiltInCount = rawLevels.filter((levelData) => !isRectangularLevelData(levelData)).length;
 const levels = rawLevels.map((levelData) => normalizeLevelData(levelData));
@@ -387,17 +446,17 @@ async function start() {
 
   // en_US: Submit custom level (with validation)
   // zh_TW: 提交自訂關卡（含驗證）
+  app.post('/api/custom-levels/precheck', (req, res) => {
+    const { levelData } = req.body || {};
+    const eligibility = evaluateCustomLevelUploadEligibility(levelData);
+    if (!eligibility.ok) {
+      return res.status(eligibility.status).json(eligibility.payload);
+    }
+    return res.json({ success: true, message: 'ok_to_validate' });
+  });
+
   app.post('/api/custom-levels', (req, res) => {
     const { levelData, creatorName, solutionMoves } = req.body || {};
-    
-    // Validate required fields
-    if (!levelData || typeof levelData !== 'string' || !levelData.trim()) {
-      return res.status(400).json({
-        success: false,
-        error: 'level_data_required',
-        message: '關卡內容為必填'
-      });
-    }
     
     if (!solutionMoves || typeof solutionMoves !== 'string' || !solutionMoves.trim()) {
       return res.status(400).json({
@@ -407,15 +466,11 @@ async function start() {
       });
     }
 
-    if (!isRectangularLevelData(levelData)) {
-      return res.status(400).json({
-        success: false,
-        error: 'level_not_rectangular',
-        message: '關卡必須為完整矩形且不可缺字'
-      });
+    const eligibility = evaluateCustomLevelUploadEligibility(levelData);
+    if (!eligibility.ok) {
+      return res.status(eligibility.status).json(eligibility.payload);
     }
-
-    const normalizedLevelData = normalizeLevelData(levelData);
+    const { normalizedLevelData } = eligibility;
     
     const name = (creatorName || '').toString().trim();
     
@@ -435,26 +490,6 @@ async function start() {
         success: false,
         error: 'name_too_long',
         message: '玩家名稱不可超過 32 字元'
-      });
-    }
-    
-    if (isLevelInitiallySolved(normalizedLevelData)) {
-      return res.status(400).json({
-        success: false,
-        error: 'already_completed_level',
-        message: '關卡初始狀態已完成，請至少保留一個未在目標點上的箱子'
-      });
-    }
-
-    // en_US: Check for duplicate level (built-in + custom)
-    // zh_TW: 檢查關卡是否重複（內建 + 自訂）
-    const duplicateLevelId = findDuplicateLevelId(normalizedLevelData);
-    if (duplicateLevelId !== null) {
-      return res.status(400).json({
-        success: false,
-        error: 'duplicate_level',
-        message: `此關卡已存在（關卡 ID: ${duplicateLevelId}）`,
-        existingLevelId: duplicateLevelId
       });
     }
     
