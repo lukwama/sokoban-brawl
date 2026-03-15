@@ -1222,6 +1222,7 @@ function editorResize(markDirty = false) {
 }
 
 function normalizeEditorCell(ch) {
+  if (ch === '?') return '?';
   if (ch === '#') return '#';
   if (ch === '$') return '$';
   if (ch === '.') return '.';
