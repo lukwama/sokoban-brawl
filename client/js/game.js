@@ -1070,9 +1070,13 @@ function showTab(tabId) {
   // en_US: When switching to game tab, sync level from leaderboard so both views stay consistent
   // zh_TW: 切換到遊戲分頁時，從排行榜同步關卡，保持雙向一致
   if (tabId === 'game') {
-    const totalLb = levels.length + customLevels.length;
-    if (lbLevelIndex >= 0 && lbLevelIndex < totalLb && lbLevelIndex !== levelIndex) {
-      loadLevel(lbLevelIndex);
+    const validationIdx = levels.length + customLevels.length;
+    const isValidationPlaythrough = validationTestLevel !== null && levelIndex === validationIdx;
+    if (!isValidationPlaythrough) {
+      const totalLb = levels.length + customLevels.length;
+      if (lbLevelIndex >= 0 && lbLevelIndex < totalLb && lbLevelIndex !== levelIndex) {
+        loadLevel(lbLevelIndex);
+      }
     }
     scheduleBoardLayout();
   }

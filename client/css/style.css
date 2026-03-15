@@ -133,10 +133,13 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 4ch;
+  flex: 0 0 4ch;
 }
 
 .level-num {
-  min-width: 2ch;
+  min-width: 4ch;
+  width: 4ch;
   text-align: center;
   font-weight: 600;
   font-size: 1.1rem;
