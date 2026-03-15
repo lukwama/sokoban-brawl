@@ -51,6 +51,11 @@ const I18N = {
   'upload.confirm':    { en: 'Upload this level?', zh: '是否要將此關卡上傳到伺服器？' },
   'upload.creator':    { en: 'Creator', zh: '上傳者' },
   'upload.steps':      { en: 'Steps',   zh: '步數' },
+  'name.dialogTitle':  { en: 'Set Player Name', zh: '設定玩家名稱' },
+  'name.dialogBody':   { en: 'Please set your player name to continue.', zh: '請先設定玩家名稱再繼續。' },
+  'name.placeholder':  { en: 'Enter your name', zh: '請輸入玩家名稱' },
+  'name.save':         { en: 'Save', zh: '儲存' },
+  'name.invalid':      { en: 'Please enter a valid name (cannot use default name Player).', zh: '請輸入有效玩家名稱（不可使用預設名稱 Player）' },
   'upload.success':    { en: 'Upload Successful!', zh: '上傳成功！' },
   'upload.failed':     { en: 'Upload Failed',      zh: '上傳失敗' },
   'upload.network':    { en: 'Network error',       zh: '網路錯誤' },
@@ -179,6 +184,91 @@ function showError(title, body) {
 
 function showSuccess(title, body) {
   return showAlert(title, body, 'success');
+}
+
+const INVALID_PLAYER_NAMES = ['Player', 'player', '匿名', '玩家', 'Anonymous', ''];
+
+function getPlayerNameInputEl() {
+  return document.getElementById('playerName');
+}
+
+function getStoredOrInputPlayerName() {
+  const inputName = (getPlayerNameInputEl() && getPlayerNameInputEl().value.trim()) || '';
+  const storedName = (localStorage.getItem(STORAGE_NAME) || '').trim();
+  return inputName || storedName || '';
+}
+
+function isValidPlayerName(name) {
+  const n = String(name || '').trim();
+  return !!n && !INVALID_PLAYER_NAMES.includes(n) && n.length <= 32;
+}
+
+function setPlayerName(name) {
+  const n = String(name || '').trim();
+  const input = getPlayerNameInputEl();
+  if (input) input.value = n;
+  localStorage.setItem(STORAGE_NAME, n);
+}
+
+function promptPlayerNameDialog(initialName = '') {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal-card">
+        <span class="modal-icon modal-icon-info">👤</span>
+        <div class="modal-title">${tSingle('name.dialogTitle')}</div>
+        <div class="modal-body">${tSingle('name.dialogBody')}</div>
+        <div class="level-jump-body">
+          <input type="text" id="nameInput" class="jump-input" maxlength="32" placeholder="${tSingle('name.placeholder')}" value="${String(initialName || '').replace(/"/g, '&quot;')}" />
+        </div>
+        <div class="modal-actions">
+          <button class="modal-btn" data-action="cancel">${tSingle('btn.cancel')}</button>
+          <button class="modal-btn modal-btn-primary" data-action="save">${tSingle('name.save')}</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    requestAnimationFrame(() => overlay.classList.add('visible'));
+
+    const input = overlay.querySelector('#nameInput');
+    if (input) {
+      input.focus();
+      input.select();
+    }
+
+    const close = (value) => {
+      overlay.classList.remove('visible');
+      setTimeout(() => overlay.remove(), 200);
+      resolve(value);
+    };
+
+    const trySave = () => {
+      const value = (input && input.value ? input.value : '').trim();
+      if (!isValidPlayerName(value)) {
+        showToast(tSingle('name.invalid'));
+        return;
+      }
+      close(value);
+    };
+
+    overlay.querySelector('[data-action="cancel"]').addEventListener('click', () => close(null));
+    overlay.querySelector('[data-action="save"]').addEventListener('click', trySave);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(null); });
+    if (input) input.addEventListener('keydown', (e) => { if (e.key === 'Enter') trySave(); });
+  });
+}
+
+async function ensurePlayerName() {
+  const current = getStoredOrInputPlayerName();
+  if (isValidPlayerName(current)) {
+    setPlayerName(current);
+    return current;
+  }
+  const entered = await promptPlayerNameDialog(current);
+  if (!entered) return null;
+  setPlayerName(entered);
+  return entered;
 }
 
 // en_US: Level jump modal — click level number to jump to any level
@@ -928,13 +1018,10 @@ async function handleCustomLevelCompletion() {
   boardEl.classList.add('win-glow');
   
   setTimeout(async () => {
-    const playerName = (document.getElementById('playerName') && document.getElementById('playerName').value.trim()) || 'Player';
+    const playerName = await ensurePlayerName();
     const moves = getMovesString();
     
-    const defaultNames = ['Player', 'player', '匿名', '玩家', 'Anonymous'];
-    if (defaultNames.includes(playerName)) {
-      await showError(tSingle('upload.nameTitle'), t('upload.nameBody'));
-      showTab('settings');
+    if (!playerName) {
       pendingCustomLevelUpload = null;
       validationTestLevel = null;
       await loadCustomLevelsFromServer();
@@ -1016,7 +1103,8 @@ async function uploadCustomLevel(levelData, creatorName, solutionMoves) {
 
 async function submitScore() {
   const base = getBaseUrl();
-  const name = (document.getElementById('playerName') && document.getElementById('playerName').value.trim()) || 'Player';
+  const name = await ensurePlayerName();
+  if (!name) return;
   const moves = getMovesString();
   if (!moves) return;
   const lid = getLevelId(levelIndex);
