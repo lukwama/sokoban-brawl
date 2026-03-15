@@ -38,6 +38,7 @@ const I18N = {
   'editor.invalid':    { en: 'Invalid Level',  zh: '關卡無效' },
   'editor.needPlayer': { en: 'Must have exactly one player',  zh: '必須有且僅有一個玩家' },
   'editor.needBox':    { en: 'Need at least one box',         zh: '至少需要一個箱子' },
+  'editor.alreadySolved': { en: 'Level starts already solved. Keep at least one box off target.', zh: '關卡初始已是通關狀態，請至少保留一個箱子不在目標點上' },
   'editor.needRectangle': { en: 'Map must be rectangular with no missing cells', zh: '地圖必須為完整矩形且不可缺字' },
   'editor.unsavedTitle': { en: 'Unsaved Changes', zh: '尚未儲存' },
   'editor.unsavedBody':  { en: 'You have unsaved edits. Save and start validation, or discard and leave?', zh: '編輯器有未儲存變更。要先儲存並開始驗證，或放棄變更離開？' },
@@ -1384,6 +1385,11 @@ async function editorSave() {
   const str = editorGridToState();
   if (!isRectangularLevelString(str)) {
     await showError(tSingle('editor.invalid'), t('editor.needRectangle'));
+    return;
+  }
+  const parsed = parseLevel(str);
+  if (checkWin(parsed.boxes, parsed.targets)) {
+    await showError(tSingle('editor.invalid'), t('editor.alreadySolved'));
     return;
   }
   // en_US: Validate directly from editorGrid to avoid trim() issues

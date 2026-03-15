@@ -10,7 +10,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { createHmac } from 'crypto';
 import { spawn, execSync } from 'child_process';
-import { initDb, getLeaderboard, hasDuplicateMoves, insertRecord, getNextCustomLevelId, isDuplicateLevel, insertCustomLevel, getCustomLevels, getCustomLevelById } from './db.js';
+import { initDb, getLeaderboard, hasDuplicateMoves, insertRecord, insertCustomLevel, getCustomLevels, getCustomLevelById } from './db.js';
 import { validateSolution } from './core/validator.js';
 import { seedDefaultCustomLevelsIfNeeded } from './seedDefaultLevels.js';
 
@@ -29,6 +29,32 @@ function isRectangularLevelData(levelData) {
   const width = rows[0].length;
   if (width === 0) return false;
   return rows.every((r) => r.length === width);
+}
+
+function isLevelInitiallySolved(levelData) {
+  const rows = String(levelData || '').replace(/^[\r\n]+|[\r\n]+$/g, '').split('\n').map((r) => r.split(''));
+  const boxes = [];
+  const targets = [];
+  for (let row = 0; row < rows.length; row++) {
+    for (let col = 0; col < rows[row].length; col++) {
+      const c = rows[row][col];
+      if (c === '$' || c === '*') boxes.push(`${row},${col}`);
+      if (c === '.' || c === '*' || c === '%') targets.push(`${row},${col}`);
+    }
+  }
+  if (targets.length === 0) return false;
+  return targets.every((t) => boxes.includes(t));
+}
+
+function findDuplicateLevelId(normalizedLevelData) {
+  const builtInIdx = levels.findIndex((level) => level === normalizedLevelData);
+  if (builtInIdx >= 0) return builtInIdx;
+
+  const customLevels = getCustomLevels();
+  const customMatch = customLevels.find((level) => normalizeLevelData(level.levelData) === normalizedLevelData);
+  if (customMatch) return customMatch.levelId;
+
+  return null;
 }
 
 const rawLevels = JSON.parse(readFileSync(join(__dirname, 'levels.json'), 'utf8'));
@@ -250,15 +276,23 @@ async function start() {
       });
     }
     
-    // en_US: Check for duplicate level
-    // zh_TW: 檢查關卡是否重複
-    const duplicateCheck = isDuplicateLevel(normalizedLevelData);
-    if (duplicateCheck.isDuplicate) {
+    if (isLevelInitiallySolved(normalizedLevelData)) {
+      return res.status(400).json({
+        success: false,
+        error: 'already_completed_level',
+        message: '關卡初始狀態已完成，請至少保留一個未在目標點上的箱子'
+      });
+    }
+
+    // en_US: Check for duplicate level (built-in + custom)
+    // zh_TW: 檢查關卡是否重複（內建 + 自訂）
+    const duplicateLevelId = findDuplicateLevelId(normalizedLevelData);
+    if (duplicateLevelId !== null) {
       return res.status(400).json({
         success: false,
         error: 'duplicate_level',
-        message: `此關卡已存在（關卡 ID: ${duplicateCheck.existingLevelId}）`,
-        existingLevelId: duplicateCheck.existingLevelId
+        message: `此關卡已存在（關卡 ID: ${duplicateLevelId}）`,
+        existingLevelId: duplicateLevelId
       });
     }
     
@@ -283,6 +317,10 @@ async function start() {
       solutionMoves.trim(),
       validationResult.steps
     );
+
+    // en_US: Seed leaderboard with uploader's validated first-clear record
+    // zh_TW: 新關卡建立後，立即寫入上傳者首次驗證通關紀錄到排行榜
+    insertRecord(String(levelId), name, validationResult.steps, solutionMoves.trim(), createdAt);
     
     const levelUrl = `${req.protocol}://${req.get('host')}/singleplayer/${levelId}`;
     
