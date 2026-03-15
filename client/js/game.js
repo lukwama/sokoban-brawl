@@ -813,7 +813,14 @@ function doMove(key, recordMove = true) {
     if (pendingCustomLevelUpload) {
       handleCustomLevelCompletion();
     } else {
-      submitScore(); // Auto submit score
+      // en_US: Snapshot score payload before transition to avoid losing level/moves during name prompt
+      // zh_TW: 切關前先快照送分資料，避免姓名輸入期間狀態切換造成關卡/步驟遺失
+      const scoreSnapshot = {
+        levelId: getLevelId(levelIndex),
+        steps,
+        moves: getMovesString(),
+      };
+      submitScore(scoreSnapshot); // Auto submit score
       boardEl.classList.add('win-glow');
       setTimeout(() => {
         const area = document.querySelector('.game-area');
@@ -1110,21 +1117,23 @@ async function uploadCustomLevel(levelData, creatorName, solutionMoves) {
   }
 }
 
-async function submitScore() {
+async function submitScore(snapshot = null) {
   const base = getBaseUrl();
   const name = await ensurePlayerName();
   if (!name) return;
-  const moves = getMovesString();
+  const moves = snapshot ? String(snapshot.moves || '') : getMovesString();
   if (!moves) return;
-  const lid = getLevelId(levelIndex);
+  const lid = snapshot ? snapshot.levelId : getLevelId(levelIndex);
   if (lid === null) return;
   const submitLevelId = String(lid);
+  const submitSteps = snapshot ? parseInt(snapshot.steps, 10) : steps;
+  if (isNaN(submitSteps) || submitSteps < 0) return;
   setConnectionStatus(false);
   try {
     const res = await fetch(`${base}/api/leaderboard/${submitLevelId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ playerName: name, steps, moves }),
+      body: JSON.stringify({ playerName: name, steps: submitSteps, moves }),
     });
     const data = await res.json().catch(() => ({}));
     if (res.ok && data.success) {
