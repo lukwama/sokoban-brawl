@@ -38,6 +38,7 @@ const I18N = {
   'editor.invalid':    { en: 'Invalid Level',  zh: '關卡無效' },
   'editor.needPlayer': { en: 'Must have exactly one player',  zh: '必須有且僅有一個玩家' },
   'editor.needBox':    { en: 'Need at least one box',         zh: '至少需要一個箱子' },
+  'editor.needRectangle': { en: 'Map must be rectangular with no missing cells', zh: '地圖必須為完整矩形且不可缺字' },
   'editor.unsavedTitle': { en: 'Unsaved Changes', zh: '尚未儲存' },
   'editor.unsavedBody':  { en: 'You have unsaved edits. Save and start validation, or discard and leave?', zh: '編輯器有未儲存變更。要先儲存並開始驗證，或放棄變更離開？' },
   'editor.saveAndTest':  { en: 'Save & Test', zh: '儲存並驗證' },
@@ -296,6 +297,20 @@ function parseLevel(levelString) {
   return { grid: rows, R, C, player, boxes, targets };
 }
 
+function normalizeLevelString(levelString) {
+  const rows = String(levelString || '').replace(/^[\r\n]+|[\r\n]+$/g, '').split('\n');
+  const width = Math.max(0, ...rows.map((r) => r.length));
+  return rows.map((r) => r.padEnd(width, '?')).join('\n');
+}
+
+function isRectangularLevelString(levelString) {
+  const rows = String(levelString || '').replace(/^[\r\n]+|[\r\n]+$/g, '').split('\n');
+  if (rows.length === 0) return false;
+  const width = rows[0].length;
+  if (width === 0) return false;
+  return rows.every((r) => r.length === width);
+}
+
 function tryMove(state, key, recordMove = true) {
   const d = DIR[key];
   if (!d || !state.player) return null;
@@ -325,6 +340,8 @@ function checkWin(boxes, targets) {
 }
 
 let levels = ["?#####?\n#     #\n# # # #\n# $@$ #\n# ### #\n#.   .#\n?#####?", "??###???\n??#.#???\n??# ####\n###$ $.#\n#. $@###\n####$#??\n???#.#??\n???###??", "?######\n## .  #\n#  $$.#\n#.$@$.#\n#.$$  #\n#  . ##\n######?", "####???\n#..####\n#..$  #\n#   $ #\n##$$  #\n?#   @#\n?######", "?####?\n##  #?\n#@$ #?\n##$ ##\n## $ #\n#.$  #\n#..*.#\n######", "?####???\n?#@ ###?\n?# $  #?\n### # ##\n#.# #  #\n#.$  # #\n#.   $ #\n########", "??######\n??#    #\n###$$$ #\n#@ $.. #\n# $...##\n####  #?\n???####?", "??#####?\n###  @#?\n#  $. ##\n#  .$. #\n### *$ #\n? #   ##\n??#####?", "??####??\n??#..#??\n?## .##?\n?#  $.#?\n## $  ##\n#  #$$ #\n#   @  #\n########", "########\n#  #   #\n# $..$ #\n#@$.* ##\n# $..$ #\n#  #   #\n########", "?######?\n?#. ..#?\n?#. $.#?\n###  $##\n# $  $ #\n# #$## #\n#   @  #\n########", "?######\n## . @#\n# $ $ #\n#. * .#\n# $ $ #\n#  . ##\n######?", "#######\n#..$..#\n#..#..#\n# $$$ #\n#  $  #\n# $$$ #\n#  #@ #\n#######", "#####????\n#@  #????\n# $$#?###\n# $ #?#.#\n### ###.#\n?##    .#\n?#   #  #\n?#   ####\n?#####???", "??#####?\n###   #?\n#.#@# #?\n#.# $ #?\n#.  ####\n#  $   #\n#  # $ #\n####   #\n???#####", "?####??\n?#  ###\n## $  #\n#   $ #\n# #   #\n# #$###\n# #@..#\n# $ ..#\n###  ##\n??####?", "???####\n???#  #\n??##$ #\n###.. #\n# $.. #\n# $# @#\n# $   #\n#   ###\n#####??", "??####??\n??#  #??\n??# $#??\n###  ###\n#  *.$ #\n#  ..  #\n### $###\n??# @#??\n??####??", "######??\n#@   ###\n#  $   #\n### ## #\n#  $# .#\n#   $$.#\n## $  .#\n?#####.#\n?????#.#\n?????###", "??###??\n###@###\n#     #\n# # $ #\n# #$ ##\n# $ $#?\n## $ #?\n?#...#?\n?##..#?\n??####?", "######\n#  ..#\n# $$.#\n# #..#\n# $ ##\n# # #?\n#  $##\n#  $@#\n##   #\n?#####", "????###?\n#####.##\n# $ $ .#\n#@$ #.##\n# $ .$.#\n#### .##\n???# $ #\n???#   #\n???#####", "?######\n?#  ..#\n?# $*.#\n## $..#\n# $ #@#\n# # $ #\n#  $# #\n###   #\n??#####", "#########\n# ..#   #\n#..* $ @#\n##.##  ##\n# $ $  #?\n#  $#$##?\n#   #  #?\n###    #?\n??###  #?\n????####?", "?########\n?#   #  #\n## #  $ #\n#  # $ @#\n#   $## #\n# $$ $  #\n#   ..###\n####..#??\n???#..#??\n???####??", "??#####?\n??#   #?\n###$$ ##\n# $ #  #\n#..$ #@#\n#..#   #\n#..$$ ##\n#.# $ #?\n###   #?\n??#####?", "?#####??\n?# @ #??\n?#$$$###\n##.#.#.#\n#.$  $ #\n# .#.#.#\n#  $ $ #\n##     #\n?#######", "########?\n#      #?\n# #$$  #?\n# ...# #?\n##...$ ##\n?# ## $ #\n?#$  $  #\n?#  #  @#\n?########", "?####???\n?# @#???\n?#  ####\n##$$#..#\n#   #..#\n# $ $ .#\n#   $ .#\n## $####\n?#  #???\n?####???", "??######?\n??#   .#?\n### $ ##?\n#.#@$ #??\n# ###.###\n# ..#$  #\n# $$ .$.#\n## $  ###\n?#    #??\n?######??", "#########\n#   # ..#\n#   # *.#\n# $  $..#\n# #$## ##\n#$# #  ##\n# $   $ #\n# # ##@ #\n#.  #####\n#####????", "??#####\n###   #\n#. $$ #\n#.#   #\n#. #$@#\n#.$   #\n#. $$ #\n#.  ###\n#####??", "######??\n#@ . ###\n#  #   #\n# $# # #\n#.$.$. #\n##$# $##\n?# #  #?\n?# .  #?\n?######?", "?????####\n######  #\n#    #$ #\n#   $   #\n###$##$ #\n###@##..#\n#  $ ...#\n# $  #.##\n###  ###?\n??####???", "?####??\n?#  ###\n## @  #\n# $.$ #\n#$.$.$#\n#.$.$.#\n# .$. #\n#  *  #\n#######", "#####?\n#   ##\n#  $ #\n# $ @#\n###. #\n??#.##\n??#. #\n###. #\n#  $ #\n# $  #\n##  ##\n?####?", "??####???\n??#  #???\n??# @#???\n??#  #???\n###$#####\n# $ #   #\n# ..$.. #\n# $ #   #\n### # ###\n??#   #??\n??#####??", "####???\n#  ####\n#  $  #\n# #.# #\n# # # #\n#.$.$.#\n# # # #\n# #.# #\n#  $$ #\n##  @ #\n?#  ###\n?####??", "?????####?\n?????#  #?\n######  #?\n#  ## $ #?\n#  ##..##?\n# ..$$.###\n## .$... #\n?#    $$ #\n?#$$$##  #\n?#  @#####\n?#####????", "???#######\n?###     #\n##   # # #\n#  #.$$$ #\n# #.*# ###\n#  ..# # ?\n###..$ ##?\n??#.# $ #?\n?## # #@#?\n?# $  $ #?\n?#     ##?\n?#######??", "?????####\n######  #\n#  $  $@#\n#   ##  #\n#  #.. ##\n##$#..$ #\n## #..  #\n#   ##  #\n#  $  $ #\n######  #\n?????####", "#########?\n#   #   #?\n# #   $ #?\n# # ##$ #?\n#....$  #?\n##.. #  #?\n?##$## ###\n?#     $ #\n?#   #$# #\n?#####  @#\n?????#####", "?#####\n?# @ #\n?#$$$#\n?# $ #\n?#...#\n##...#\n#    #\n# $$ #\n#  ###\n####??", "####???\n#  ###?\n#...@#?\n# $# #?\n#  #$##\n# $#  #\n#  #$ #\n##$...#\n?#  $ #\n?#    #\n?######", "??????####\n????### @#\n#####    #\n# $ ..#$ #\n#  #..$  #\n# $#  #$ #\n#  $..#  #\n# $#.. $ #\n#    #####\n#  ###????\n####??????", "######??\n# @  #??\n#  $ #??\n# $ ####\n## $#. #\n?#$ #..#\n##  $..#\n#  $ ..#\n#  $####\n#   #???\n#####???", "???####???\n?###  #???\n?#    ##??\n##$#   #??\n#  #$# ###\n# $ .*.  #\n# @###.# #\n## #...$ #\n?#  $#$###\n?##    #??\n??######??", "?#####????\n?#   #????\n?#  $#####\n?#   #   #\n?#*#$# # #\n##.. $   #\n# ..##$###\n#@#.#  #??\n#   $  #??\n#####  #??\n????####??", "?####?????\n?#  #?????\n?#$ ###???\n?#   @#???\n## #. ####\n#  #*.$  #\n# $$..#  #\n## ##.   #\n?# $  ####\n?#  ###???\n?#  #?????\n?####?????", "?#####?\n?#   #?\n?# $ #?\n?#   ##\n?# #$ #\n## .* #\n# ..# #\n# #.. #\n# $ $##\n###$ #?\n??# @#?\n??####?", "#####?????\n#   #?????\n# $ #?????\n# $ ######\n# $ #  . #\n##$    . #\n# $ #....#\n# @ ######\n# $ #?????\n#   #?????\n#####?????", "?????####\n######  #\n#     ..#\n# $$ #..#\n# $  #..#\n##$$@#..#\n# $  #..#\n# $$  # #\n#   $$  #\n####   ##\n???#####?", "?????####\n?????#  #\n????##  #\n#####.$ #\n#  $.$. #\n#@$.$.$.#\n#  $.$. #\n#####.$ #\n????#   #\n????##  #\n?????####", "#####?????\n#   #?????\n#@$$#####?\n##  # $.##\n##    .$ #\n#   #.$. #\n#  #.$.$ #\n###.$.$. #\n??###   ##\n????#####", "???####?\n####  #?\n# . . ##\n# #$$  #\n# @$.# #\n### *  #\n??#  ###\n??####??", "?########??\n?#      ##?\n?# $ $ $ #?\n## *   * ##\n# **#$#** #\n#...   ...#\n# *#$#$#* #\n#    @    #\n###########"];
+levels = levels.map((levelData) => normalizeLevelString(levelData));
+
 let customLevels = [];
 function getAllLevels() {
   const customLevelStrings = customLevels.map(level => 
@@ -811,7 +828,7 @@ async function fetchLevels() {
     const res = await fetch(`${base}/api/levels`);
     const data = await res.json().catch(() => ({}));
     if (res.ok && Array.isArray(data.levels)) {
-      levels = data.levels;
+      levels = data.levels.map((levelData) => normalizeLevelString(levelData));
       return true;
     }
   } catch (_) {}
@@ -826,7 +843,7 @@ async function loadCustomLevelsFromServer() {
     
     if (res.ok && Array.isArray(data.customLevels)) {
       customLevels = data.customLevels.map(level => ({
-        levelData: level.levelData,
+        levelData: normalizeLevelString(level.levelData),
         levelId: level.levelId,
         creatorName: level.creatorName,
         createdAt: level.createdAt,
@@ -843,7 +860,7 @@ async function loadCustomLevelsFromServer() {
     const raw = localStorage.getItem(STORAGE_CUSTOM);
     const localLevels = raw ? JSON.parse(raw) : [];
     customLevels = localLevels.map(levelStr => ({
-      levelData: levelStr,
+      levelData: normalizeLevelString(levelStr),
       levelId: null,
       creatorName: null,
       createdAt: null
@@ -883,7 +900,7 @@ async function ensureLevelById(levelId) {
     if (!data || !data.levelData) return null;
     if (data.isCustom) {
       customLevels.push({
-        levelData: data.levelData,
+        levelData: normalizeLevelString(data.levelData),
         levelId: data.levelId,
         creatorName: data.creatorName || null,
         createdAt: data.createdAt || null,
@@ -1250,7 +1267,7 @@ function loadRememberedLevelIntoEditor() {
     editorGrid[r] = [];
     const row = rows[r] || '';
     for (let c = 0; c < editorW; c++) {
-      editorGrid[r][c] = normalizeEditorCell(row[c] || ' ');
+      editorGrid[r][c] = normalizeEditorCell(row[c] ?? '?');
     }
   }
   editorResize(false);
@@ -1259,6 +1276,10 @@ function loadRememberedLevelIntoEditor() {
 
 async function editorSave() {
   const str = editorGridToState();
+  if (!isRectangularLevelString(str)) {
+    await showError(tSingle('editor.invalid'), t('editor.needRectangle'));
+    return;
+  }
   // en_US: Validate directly from editorGrid to avoid trim() issues
   // zh_TW: 直接從 editorGrid 驗證，避免 trim() 導致的問題
   let boxCount = 0, targetCount = 0, playerCount = 0;

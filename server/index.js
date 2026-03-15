@@ -15,8 +15,25 @@ import { validateSolution } from './core/validator.js';
 import { seedDefaultCustomLevelsIfNeeded } from './seedDefaultLevels.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const levels = JSON.parse(readFileSync(join(__dirname, 'levels.json'), 'utf8'));
 const clientDir = join(__dirname, '..', 'client');
+
+function normalizeLevelData(levelData) {
+  const rows = String(levelData || '').replace(/^[\r\n]+|[\r\n]+$/g, '').split('\n');
+  const width = Math.max(0, ...rows.map((r) => r.length));
+  return rows.map((r) => r.padEnd(width, '?')).join('\n');
+}
+
+function isRectangularLevelData(levelData) {
+  const rows = String(levelData || '').replace(/^[\r\n]+|[\r\n]+$/g, '').split('\n');
+  if (rows.length === 0) return false;
+  const width = rows[0].length;
+  if (width === 0) return false;
+  return rows.every((r) => r.length === width);
+}
+
+const rawLevels = JSON.parse(readFileSync(join(__dirname, 'levels.json'), 'utf8'));
+const nonRectBuiltInCount = rawLevels.filter((levelData) => !isRectangularLevelData(levelData)).length;
+const levels = rawLevels.map((levelData) => normalizeLevelData(levelData));
 
 // en_US: Read git commit info at startup for the /health endpoint
 // zh_TW: 啟動時讀取 git commit 資訊，供 /health 端點使用
@@ -118,6 +135,9 @@ const PORT = process.env.PORT || 3000;
 async function start() {
   await initDb();
   seedDefaultCustomLevelsIfNeeded();
+  if (nonRectBuiltInCount > 0) {
+    console.warn(`[Levels] Normalized ${nonRectBuiltInCount} non-rectangular built-in map(s) by padding '?'`);
+  }
 
   app.get('/health', (req, res) => {
     res.json({
@@ -136,7 +156,10 @@ async function start() {
   // en_US: Get custom levels
   // zh_TW: 取得自訂關卡列表
   app.get('/api/custom-levels', (req, res) => {
-    const customLevels = getCustomLevels();
+    const customLevels = getCustomLevels().map((level) => ({
+      ...level,
+      levelData: normalizeLevelData(level.levelData),
+    }));
     res.json({ customLevels });
   });
 
@@ -164,7 +187,7 @@ async function start() {
     if (customLevel) {
       return res.json({
         levelId: customLevel.levelId,
-        levelData: customLevel.levelData,
+        levelData: normalizeLevelData(customLevel.levelData),
         creatorName: customLevel.creatorName,
         createdAt: customLevel.createdAt,
         isCustom: true
@@ -195,6 +218,16 @@ async function start() {
         message: '必須提供通關步驟'
       });
     }
+
+    if (!isRectangularLevelData(levelData)) {
+      return res.status(400).json({
+        success: false,
+        error: 'level_not_rectangular',
+        message: '關卡必須為完整矩形且不可缺字'
+      });
+    }
+
+    const normalizedLevelData = normalizeLevelData(levelData);
     
     const name = (creatorName || '').toString().trim();
     
@@ -219,7 +252,7 @@ async function start() {
     
     // en_US: Check for duplicate level
     // zh_TW: 檢查關卡是否重複
-    const duplicateCheck = isDuplicateLevel(levelData);
+    const duplicateCheck = isDuplicateLevel(normalizedLevelData);
     if (duplicateCheck.isDuplicate) {
       return res.status(400).json({
         success: false,
@@ -231,7 +264,7 @@ async function start() {
     
     // en_US: Validate solution (player must complete the level)
     // zh_TW: 驗證通關（玩家必須先通關才能上傳）
-    const validationResult = validateSolution(levelData, solutionMoves);
+    const validationResult = validateSolution(normalizedLevelData, solutionMoves);
     
     if (!validationResult.valid) {
       return res.status(400).json({
@@ -245,7 +278,7 @@ async function start() {
     // en_US: Insert custom level
     // zh_TW: 插入自訂關卡
     const { levelId, createdAt } = insertCustomLevel(
-      levelData.trim(),
+      normalizedLevelData,
       name,
       solutionMoves.trim(),
       validationResult.steps
@@ -306,7 +339,7 @@ async function start() {
       // Custom level
       const customLevel = getCustomLevelById(levelIndex);
       if (customLevel) {
-        levelString = customLevel.levelData;
+        levelString = normalizeLevelData(customLevel.levelData);
       }
     }
     
