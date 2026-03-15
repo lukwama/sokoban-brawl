@@ -38,6 +38,10 @@ const I18N = {
   'editor.invalid':    { en: 'Invalid Level',  zh: '關卡無效' },
   'editor.needPlayer': { en: 'Must have exactly one player',  zh: '必須有且僅有一個玩家' },
   'editor.needBox':    { en: 'Need at least one box',         zh: '至少需要一個箱子' },
+  'editor.unsavedTitle': { en: 'Unsaved Changes', zh: '尚未儲存' },
+  'editor.unsavedBody':  { en: 'You have unsaved edits. Save and start validation, or discard and leave?', zh: '編輯器有未儲存變更。要先儲存並開始驗證，或放棄變更離開？' },
+  'editor.saveAndTest':  { en: 'Save & Test', zh: '儲存並驗證' },
+  'editor.discardLeave': { en: 'Discard', zh: '放棄離開' },
   'editor.startTest':  { en: 'Start Testing',  zh: '開始測試通關' },
   'editor.testBody':   { en: 'Please complete this level first, then you can upload it!', zh: '請先通關此關卡，通關後即可上傳！' },
   'upload.nameTitle':  { en: 'Player Name Not Set', zh: '玩家名稱未設定' },
@@ -345,6 +349,8 @@ let controlMode = 'buttons';
 let swipeStart = null;
 let isLevelTransitioning = false;
 let pendingCustomLevelUpload = null;
+let currentTabId = 'game';
+let rememberedLevelIndex = 0;
 // en_US: Temporary level string used for editor validation play-through (not persisted in customLevels)
 // zh_TW: 編輯器驗證通關時暫存的關卡字串（不會影響 customLevels）
 let validationTestLevel = null;
@@ -586,6 +592,24 @@ function updateUrlForLevel(idx) {
   }
 }
 
+function getPlayableLevelCount() {
+  return levels.length + customLevels.length;
+}
+
+function clampPlayableLevelIndex(idx) {
+  const total = getPlayableLevelCount();
+  if (total <= 0) return 0;
+  if (idx < 0) return 0;
+  if (idx >= total) return total - 1;
+  return idx;
+}
+
+function rememberLevelIndex(idx) {
+  const total = getPlayableLevelCount();
+  if (idx < 0 || idx >= total) return;
+  rememberedLevelIndex = idx;
+}
+
 function loadLevel(idx) {
   stopPlayback();
 
@@ -607,6 +631,7 @@ function loadLevel(idx) {
     return;
   }
   levelIndex = idx;
+  rememberLevelIndex(levelIndex);
   const levelString = all[levelIndex];
   const parsed = parseLevel(levelString);
   state = { ...parsed, boxes: parsed.boxes.slice() };
@@ -1047,6 +1072,7 @@ async function refreshLeaderboard() {
 
 // ---- Tabs ----
 function showTab(tabId) {
+  currentTabId = tabId;
   // en_US: Stop replay immediately when leaving game tab
   // zh_TW: 離開遊戲分頁時立即停止重播並重設關卡
   if (isPlaybackActive && tabId !== 'game') {
@@ -1087,6 +1113,15 @@ let editorW = 10;
 let editorH = 10;
 let editorTool = '#';
 let editorGrid = [];
+let editorHasUnsavedChanges = false;
+
+function markEditorDirty() {
+  editorHasUnsavedChanges = true;
+}
+
+function resetEditorDirty() {
+  editorHasUnsavedChanges = false;
+}
 
 function editorGridToState() {
   const rows = [];
@@ -1113,6 +1148,7 @@ function editorPlaceAt(r, c) {
   editorGrid[r] = editorGrid[r] || [];
   if (editorGrid[r][c] === editorTool) return;
   editorGrid[r][c] = editorTool;
+  markEditorDirty();
   editorRender();
   editorUpdateStats();
 }
@@ -1167,7 +1203,7 @@ function editorUpdateStats() {
   if (el) el.textContent = `▤${box} ◎${target} ●${player}`;
 }
 
-function editorResize() {
+function editorResize(markDirty = false) {
   editorW = Math.max(5, Math.min(20, editorW));
   editorH = Math.max(5, Math.min(20, editorH));
   const newGrid = [];
@@ -1182,6 +1218,42 @@ function editorResize() {
   document.getElementById('editorHeight').textContent = editorH;
   editorRender();
   editorUpdateStats();
+  if (markDirty) markEditorDirty();
+}
+
+function normalizeEditorCell(ch) {
+  if (ch === '#') return '#';
+  if (ch === '$') return '$';
+  if (ch === '.') return '.';
+  if (ch === '@') return '@';
+  if (ch === '*') return '*';
+  if (ch === '%') return '%';
+  return ' ';
+}
+
+function loadRememberedLevelIntoEditor() {
+  const all = getAllLevels();
+  const totalPlayable = getPlayableLevelCount();
+  if (all.length === 0 || totalPlayable <= 0) return;
+
+  const sourceIdx = clampPlayableLevelIndex(rememberedLevelIndex);
+  const source = all[sourceIdx] || all[0] || '';
+  const rows = String(source).replace(/^[\r\n]+|[\r\n]+$/g, '').split('\n');
+  const sourceH = Math.max(5, Math.min(20, rows.length));
+  const sourceW = Math.max(5, Math.min(20, rows.reduce((max, row) => Math.max(max, row.length), 0)));
+
+  editorH = sourceH;
+  editorW = sourceW;
+  editorGrid = [];
+  for (let r = 0; r < editorH; r++) {
+    editorGrid[r] = [];
+    const row = rows[r] || '';
+    for (let c = 0; c < editorW; c++) {
+      editorGrid[r][c] = normalizeEditorCell(row[c] || ' ');
+    }
+  }
+  editorResize(false);
+  resetEditorDirty();
 }
 
 async function editorSave() {
@@ -1230,6 +1302,7 @@ async function editorSave() {
   levelIndex = levels.length + customLevels.length;
   loadLevel(levelIndex);
   showTab('game');
+  resetEditorDirty();
 
   await showAlert(tSingle('editor.startTest'), t('editor.testBody'));
 }
@@ -1246,15 +1319,15 @@ function initEditor() {
       editorTool = btn.dataset.tool;
     });
   });
-  document.getElementById('btnWidthPlus').addEventListener('click', () => { editorW++; editorResize(); });
-  document.getElementById('btnWidthMinus').addEventListener('click', () => { editorW--; editorResize(); });
-  document.getElementById('btnHeightPlus').addEventListener('click', () => { editorH++; editorResize(); });
-  document.getElementById('btnHeightMinus').addEventListener('click', () => { editorH--; editorResize(); });
+  document.getElementById('btnWidthPlus').addEventListener('click', () => { editorW++; editorResize(true); });
+  document.getElementById('btnWidthMinus').addEventListener('click', () => { editorW--; editorResize(true); });
+  document.getElementById('btnHeightPlus').addEventListener('click', () => { editorH++; editorResize(true); });
+  document.getElementById('btnHeightMinus').addEventListener('click', () => { editorH--; editorResize(true); });
   document.getElementById('btnEditorReset').addEventListener('click', () => {
     editorW = 10;
     editorH = 10;
     editorGrid = [];
-    editorResize();
+    editorResize(true);
   });
   document.getElementById('btnEditorSave').addEventListener('click', editorSave);
 
@@ -1291,7 +1364,44 @@ function initEditor() {
     board.addEventListener('touchcancel', () => { editorDragging = false; }, { passive: true });
   }
 
-  editorResize();
+  editorResize(false);
+  resetEditorDirty();
+}
+
+async function requestTabSwitch(targetTabId) {
+  if (!targetTabId || targetTabId === currentTabId) return;
+
+  if (currentTabId === 'editor' && targetTabId !== 'editor' && editorHasUnsavedChanges) {
+    const decision = await showModal({
+      icon: 'confirm',
+      title: tSingle('editor.unsavedTitle'),
+      body: tSingle('editor.unsavedBody'),
+      buttons: [
+        { text: tSingle('btn.cancel'), value: 'cancel' },
+        { text: tSingle('editor.discardLeave'), value: 'discard', danger: true },
+        { text: tSingle('editor.saveAndTest'), value: 'save', primary: true }
+      ]
+    });
+    if (decision === 'cancel' || decision === null) return;
+    if (decision === 'save') {
+      await editorSave();
+      return;
+    }
+    resetEditorDirty();
+  }
+
+  if (targetTabId === 'editor') {
+    if (currentTabId === 'leaderboard') rememberLevelIndex(lbLevelIndex);
+    else rememberLevelIndex(levelIndex);
+    lbLevelIndex = clampPlayableLevelIndex(rememberedLevelIndex);
+    loadRememberedLevelIntoEditor();
+  }
+
+  if (currentTabId === 'editor' && targetTabId !== 'editor') {
+    lbLevelIndex = clampPlayableLevelIndex(rememberedLevelIndex);
+  }
+
+  showTab(targetTabId);
 }
 
 function initGame() {
@@ -1349,13 +1459,14 @@ function initGame() {
   });
 
   document.querySelectorAll('.tab-btn').forEach((btn) => {
-    btn.addEventListener('click', () => showTab(btn.dataset.tab));
+    btn.addEventListener('click', () => requestTabSwitch(btn.dataset.tab));
   });
 
   if (lbPrevLevel) lbPrevLevel.addEventListener('click', () => {
     const totalLb = levels.length + customLevels.length;
     if (totalLb <= 0) return;
     lbLevelIndex = ((lbLevelIndex - 1) % totalLb + totalLb) % totalLb;
+    rememberLevelIndex(lbLevelIndex);
     updateLbDisplay();
     refreshLeaderboard();
   });
@@ -1363,6 +1474,7 @@ function initGame() {
     const totalLb = levels.length + customLevels.length;
     if (totalLb <= 0) return;
     lbLevelIndex = (lbLevelIndex + 1) % totalLb;
+    rememberLevelIndex(lbLevelIndex);
     updateLbDisplay();
     refreshLeaderboard();
   });
@@ -1373,6 +1485,7 @@ function initGame() {
       const idx = await showLevelJumpModal();
       if (idx !== null) {
         lbLevelIndex = idx;
+        rememberLevelIndex(lbLevelIndex);
         updateLbDisplay();
         refreshLeaderboard();
       }
