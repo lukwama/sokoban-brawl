@@ -912,6 +912,15 @@ function canAcceptPlayerInput() {
   return true;
 }
 
+function isTypingTarget(target) {
+  if (!target || !(target instanceof HTMLElement)) return false;
+  const tag = target.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+  if (target.isContentEditable) return true;
+  if (target.closest && target.closest('input, textarea, select, [contenteditable="true"]')) return true;
+  return false;
+}
+
 async function fetchLevels() {
   const base = getBaseUrl();
   try {
@@ -1636,6 +1645,7 @@ function initGame() {
   applyLanguage();
 
   document.addEventListener('keydown', (e) => {
+    if (isTypingTarget(e.target)) return;
     if (!canAcceptPlayerInput()) return;
     const map = { ArrowLeft: 'l', ArrowRight: 'r', ArrowUp: 'u', ArrowDown: 'd', KeyA: 'l', KeyD: 'r', KeyW: 'u', KeyS: 'd' };
     const key = map[e.code];
