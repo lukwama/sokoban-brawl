@@ -8,7 +8,7 @@ import { Server } from 'socket.io';
 import { readFileSync, statSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { createHmac } from 'crypto';
+import { createHmac, createHash } from 'crypto';
 import { spawn, execSync } from 'child_process';
 import { initDb, getLeaderboard, hasDuplicateMoves, insertRecord, insertCustomLevel, getCustomLevels, getCustomLevelById } from './db.js';
 import { validateSolution } from './core/validator.js';
@@ -31,6 +31,163 @@ function isRectangularLevelData(levelData) {
   return rows.every((r) => r.length === width);
 }
 
+function normalizeCanonicalCell(ch) {
+  if (ch === '#' || ch === '?') return '#';
+  if (ch === '$') return '$';
+  if (ch === '*') return '*';
+  if (ch === '.') return '.';
+  if (ch === '@') return '@';
+  if (ch === '%') return '%';
+  return ' ';
+}
+
+function levelToCanonicalMatrix(levelData) {
+  const normalized = normalizeLevelData(levelData);
+  return normalized.split('\n').map((row) => row.split('').map((ch) => normalizeCanonicalCell(ch)));
+}
+
+function findPlayerInMatrix(matrix) {
+  for (let r = 0; r < matrix.length; r++) {
+    for (let c = 0; c < matrix[r].length; c++) {
+      if (matrix[r][c] === '@' || matrix[r][c] === '%') return { row: r, col: c };
+    }
+  }
+  return null;
+}
+
+function floodFill(matrix, start, passable) {
+  const rows = matrix.length;
+  const cols = rows > 0 ? matrix[0].length : 0;
+  const inBounds = (r, c) => r >= 0 && r < rows && c >= 0 && c < cols;
+  const key = (r, c) => `${r},${c}`;
+  const queue = [start];
+  const visited = new Set();
+  let minRow = start.row;
+  let maxRow = start.row;
+  let minCol = start.col;
+  let maxCol = start.col;
+
+  while (queue.length > 0) {
+    const cur = queue.shift();
+    const k = key(cur.row, cur.col);
+    if (visited.has(k)) continue;
+    if (!inBounds(cur.row, cur.col)) continue;
+    if (!passable(matrix[cur.row][cur.col])) continue;
+    visited.add(k);
+    if (cur.row < minRow) minRow = cur.row;
+    if (cur.row > maxRow) maxRow = cur.row;
+    if (cur.col < minCol) minCol = cur.col;
+    if (cur.col > maxCol) maxCol = cur.col;
+    queue.push({ row: cur.row - 1, col: cur.col });
+    queue.push({ row: cur.row + 1, col: cur.col });
+    queue.push({ row: cur.row, col: cur.col - 1 });
+    queue.push({ row: cur.row, col: cur.col + 1 });
+  }
+
+  return { visited, bounds: { minRow, maxRow, minCol, maxCol } };
+}
+
+function cropMatrix(matrix, bounds) {
+  const out = [];
+  for (let r = bounds.minRow; r <= bounds.maxRow; r++) {
+    out.push(matrix[r].slice(bounds.minCol, bounds.maxCol + 1));
+  }
+  return out;
+}
+
+function transformMatrix(matrix, type) {
+  const R = matrix.length;
+  const C = R > 0 ? matrix[0].length : 0;
+  const make = (rows, cols) => Array.from({ length: rows }, () => Array(cols).fill(' '));
+  let out;
+
+  if (type === 'id') {
+    out = make(R, C);
+    for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) out[r][c] = matrix[r][c];
+    return out;
+  }
+  if (type === 'rot90') {
+    out = make(C, R);
+    for (let r = 0; r < C; r++) for (let c = 0; c < R; c++) out[r][c] = matrix[R - 1 - c][r];
+    return out;
+  }
+  if (type === 'rot180') {
+    out = make(R, C);
+    for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) out[r][c] = matrix[R - 1 - r][C - 1 - c];
+    return out;
+  }
+  if (type === 'rot270') {
+    out = make(C, R);
+    for (let r = 0; r < C; r++) for (let c = 0; c < R; c++) out[r][c] = matrix[c][C - 1 - r];
+    return out;
+  }
+  if (type === 'flipH') {
+    out = make(R, C);
+    for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) out[r][c] = matrix[r][C - 1 - c];
+    return out;
+  }
+  if (type === 'flipV') {
+    out = make(R, C);
+    for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) out[r][c] = matrix[R - 1 - r][c];
+    return out;
+  }
+  if (type === 'diagMain') {
+    out = make(C, R);
+    for (let r = 0; r < C; r++) for (let c = 0; c < R; c++) out[r][c] = matrix[c][r];
+    return out;
+  }
+  // diagAnti
+  out = make(C, R);
+  for (let r = 0; r < C; r++) for (let c = 0; c < R; c++) out[r][c] = matrix[R - 1 - c][C - 1 - r];
+  return out;
+}
+
+function normalizePlayerPosition(matrix) {
+  const player = findPlayerInMatrix(matrix);
+  if (!player) return matrix;
+  const passable = (ch) => ch !== '#' && ch !== '$' && ch !== '*';
+  const ff = floodFill(matrix, player, passable);
+  const coords = Array.from(ff.visited).map((k) => {
+    const [r, c] = k.split(',').map((n) => parseInt(n, 10));
+    return { row: r, col: c };
+  });
+  if (coords.length === 0) return matrix;
+  coords.sort((a, b) => (a.row - b.row) || (a.col - b.col));
+  const anchor = coords[0];
+
+  if (anchor.row === player.row && anchor.col === player.col) return matrix;
+
+  const oldCh = matrix[player.row][player.col];
+  matrix[player.row][player.col] = oldCh === '%' ? '.' : ' ';
+  const newCh = matrix[anchor.row][anchor.col];
+  matrix[anchor.row][anchor.col] = newCh === '.' ? '%' : '@';
+  return matrix;
+}
+
+function matrixToLevelString(matrix) {
+  return matrix.map((row) => row.join('')).join('\n');
+}
+
+function computeCanonicalLevelHash(levelData) {
+  const canonicalMatrix = levelToCanonicalMatrix(levelData);
+  const player = findPlayerInMatrix(canonicalMatrix);
+  if (!player) return null;
+
+  // Phase 1: boxes are passable, walls are blocked.
+  const phase1 = floodFill(canonicalMatrix, player, (ch) => ch !== '#');
+  if (phase1.visited.size === 0) return null;
+  const cropped = cropMatrix(canonicalMatrix, phase1.bounds);
+  const transforms = ['id', 'rot90', 'rot180', 'rot270', 'flipH', 'flipV', 'diagMain', 'diagAnti'];
+  const normalizedForms = transforms.map((type) => {
+    const transformed = transformMatrix(cropped, type);
+    const withNormalizedPlayer = normalizePlayerPosition(transformed);
+    return matrixToLevelString(withNormalizedPlayer);
+  }).sort();
+
+  const canonicalString = normalizedForms[0];
+  return createHash('sha256').update(canonicalString).digest('hex');
+}
+
 function isLevelInitiallySolved(levelData) {
   const rows = String(levelData || '').replace(/^[\r\n]+|[\r\n]+$/g, '').split('\n').map((r) => r.split(''));
   const boxes = [];
@@ -47,19 +204,24 @@ function isLevelInitiallySolved(levelData) {
 }
 
 function findDuplicateLevelId(normalizedLevelData) {
-  const builtInIdx = levels.findIndex((level) => level === normalizedLevelData);
+  const candidateHash = computeCanonicalLevelHash(normalizedLevelData);
+  if (!candidateHash) return null;
+
+  const builtInIdx = builtInCanonicalHashes.findIndex((hash) => hash === candidateHash);
   if (builtInIdx >= 0) return builtInIdx;
 
   const customLevels = getCustomLevels();
-  const customMatch = customLevels.find((level) => normalizeLevelData(level.levelData) === normalizedLevelData);
-  if (customMatch) return customMatch.levelId;
-
+  for (const level of customLevels) {
+    const customHash = computeCanonicalLevelHash(level.levelData);
+    if (customHash && customHash === candidateHash) return level.levelId;
+  }
   return null;
 }
 
 const rawLevels = JSON.parse(readFileSync(join(__dirname, 'levels.json'), 'utf8'));
 const nonRectBuiltInCount = rawLevels.filter((levelData) => !isRectangularLevelData(levelData)).length;
 const levels = rawLevels.map((levelData) => normalizeLevelData(levelData));
+const builtInCanonicalHashes = levels.map((levelData) => computeCanonicalLevelHash(levelData));
 
 // en_US: Read git commit info at startup for the /health endpoint
 // zh_TW: 啟動時讀取 git commit 資訊，供 /health 端點使用
