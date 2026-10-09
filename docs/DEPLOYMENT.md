@@ -1,5 +1,9 @@
 # Production deployment: https://sokoban.lukwama.com
 
+> **Note (2026-10):** Production now redeploys automatically after a push to `main` (the host pulls `main` with a read-only deploy key and rebuilds its container). The nginx/systemd steps below describe the earlier server and are kept for reference.
+>
+> **說明（2026-10）：** 正式站在推送到 `main` 後會自動重新部署（主機以唯讀 deploy key 拉取 `main` 並重建容器）。以下 nginx／systemd 步驟是舊伺服器的做法，保留作參考。
+
 ### en_US (English)
 
 This doc describes deploying **sokoban-brawl** on Ubuntu under the domain **sokoban.lukwama.com**. One host serves:
