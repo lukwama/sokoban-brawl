@@ -489,6 +489,7 @@ const controlsEl = document.querySelector('.controls');
 const swipeHintEl = document.getElementById('swipeHint');
 
 function setViewportHeight() {
+  if (window.__sokobanLockViewportHeight) return;
   const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
   document.documentElement.style.setProperty('--app-height', `${Math.round(viewportHeight)}px`);
 }
@@ -680,6 +681,10 @@ function renderBoard() {
 }
 
 function updateUrlForLevel(idx) {
+  // en_US: Do not override multiplayer room URLs when user is in multiplayer deep link.
+  // zh_TW: 若使用者目前在多人房間深連結，避免被單人模式覆寫網址。
+  if (/^\/multiplayer\/[A-Za-z0-9_-]+\/?$/.test(window.location.pathname)) return;
+
   const validationIdx = levels.length + customLevels.length;
   const isValidationLevel = validationTestLevel !== null && idx === validationIdx;
   let newPath = null;

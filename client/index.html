@@ -77,9 +77,48 @@
 
     <!-- Multiplayer -->
     <section id="panelMulti" class="tab-panel" role="tabpanel" aria-labelledby="tabMulti" hidden>
-      <div style="padding: 20px; text-align: center; color: var(--text-dim);">
-        <h3 data-i18n="multi.title"></h3>
-        <p data-i18n="multi.coming"></p>
+      <div id="multiRoot" class="multi-root">
+        <div id="multiLobby" class="multi-lobby">
+          <div class="multi-topbar">
+            <div class="multi-stats">
+              <div class="multi-stat" title="Countdown / 倒數">
+                <span class="multi-stat-icon" aria-hidden="true">⏱</span>
+                <span id="multiCountdown" class="multi-stat-value">60</span>
+              </div>
+              <div class="multi-stat" title="Queued Players / 配對玩家">
+                <span class="multi-stat-icon" aria-hidden="true">👥</span>
+                <span id="multiQueueCount" class="multi-stat-value">0</span>
+              </div>
+              <div class="multi-stat" title="Spectators / 觀戰人數">
+                <span class="multi-stat-icon" aria-hidden="true">👁</span>
+                <span id="multiSpectatorCount" class="multi-stat-value">0</span>
+              </div>
+            </div>
+            <div class="multi-room-row">
+              <span id="multiRoomIdLabel" class="multi-room-id">#-</span>
+              <div class="multi-actions">
+                <button type="button" id="btnMultiJoin" class="icon-btn" aria-label="Join matchmaking" title="Join matchmaking">⚔</button>
+                <button type="button" id="btnMultiSpectate" class="icon-btn" aria-label="Spectate" title="Spectate">👁</button>
+                <button type="button" id="btnMultiLeave" class="icon-btn small" aria-label="Leave queue" title="Leave queue">⎋</button>
+                <button type="button" id="btnMultiShare" class="icon-btn small" aria-label="Share room" title="Share room">🔗</button>
+              </div>
+            </div>
+          </div>
+          <div id="multiPracticeWrap" class="multi-practice">
+            <div id="multiPracticeBoard" class="game-board multi-practice-board" role="grid" aria-label="Practice board"></div>
+          </div>
+          <div class="multi-chat">
+            <div id="multiChatLog" class="multi-chat-log" aria-live="polite"></div>
+            <div class="multi-chat-input-row">
+              <input id="multiChatInput" type="text" maxlength="200" placeholder="Chat..." />
+              <button type="button" id="btnMultiChatSend" class="icon-btn small" aria-label="Send chat" title="Send">➤</button>
+            </div>
+          </div>
+        </div>
+        <div id="multiMatch" class="multi-match" hidden>
+          <div id="multiBattleCountdown" class="multi-battle-countdown">30</div>
+          <div id="multiBoard" class="game-board multi-board" role="grid" aria-label="Multiplayer board"></div>
+        </div>
       </div>
     </section>
 
@@ -170,6 +209,8 @@
     </section>
   </main>
 
+  <script src="/socket.io/socket.io.js"></script>
   <script src="/js/game.js"></script>
+  <script src="/js/multiplayer.js"></script>
 </body>
 </html>
